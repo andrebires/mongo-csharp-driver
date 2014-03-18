@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -65,7 +66,7 @@ namespace MongoDB.Bson.IO
         /// <param name="stream">The stream.</param>
         /// <returns>A buffer.</returns>
         /// <exception cref="System.ArgumentNullException">stream</exception>
-        public static IByteBuffer LoadFrom(Stream stream)
+        public static async Task<IByteBuffer> LoadFromAsync(Stream stream)
         {
             if (stream == null)
             {
@@ -77,7 +78,7 @@ namespace MongoDB.Bson.IO
             var count = 4;
             while (count > 0)
             {
-                var bytesRead = stream.Read(lengthBytes, offset, count);
+                var bytesRead = await stream.ReadAsync(lengthBytes, offset, count).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     throw new EndOfStreamException();
@@ -89,7 +90,7 @@ namespace MongoDB.Bson.IO
 
             var buffer = Create(BsonChunkPool.Default, length);
             buffer.WriteBytes(lengthBytes);
-            buffer.LoadFrom(stream, length - 4);
+            await buffer.LoadFromAsync(stream, length - 4).ConfigureAwait(false);
             buffer.Position = 0;
 
             return buffer;

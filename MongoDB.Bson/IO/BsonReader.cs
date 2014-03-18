@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Linq;
 using MongoDB.Bson.Serialization.Serializers;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -162,9 +163,9 @@ namespace MongoDB.Bson.IO
         /// </summary>
         /// <param name="stream">The BSON Stream.</param>
         /// <returns>A BsonReader.</returns>
-        public static BsonReader Create(Stream stream)
+        public static Task<BsonReader> CreateAsync(Stream stream)
         {
-            return Create(stream, BsonBinaryReaderSettings.Defaults);
+            return CreateAsync(stream, BsonBinaryReaderSettings.Defaults);
         }
 
         /// <summary>
@@ -173,9 +174,9 @@ namespace MongoDB.Bson.IO
         /// <param name="stream">The BSON Stream.</param>
         /// <param name="settings">Optional reader settings.</param>
         /// <returns>A BsonReader.</returns>
-        public static BsonReader Create(Stream stream, BsonBinaryReaderSettings settings)
+        public static async Task<BsonReader> CreateAsync(Stream stream, BsonBinaryReaderSettings settings)
         {
-            var byteBuffer = ByteBufferFactory.LoadFrom(stream);
+            var byteBuffer = await ByteBufferFactory.LoadFromAsync(stream).ConfigureAwait(false);
             byteBuffer.MakeReadOnly();
             return new BsonBinaryReader(new BsonBuffer(byteBuffer, true), true, settings);
         }

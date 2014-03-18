@@ -334,7 +334,7 @@ namespace MongoDB.Bson.IO
         /// <exception cref="System.InvalidOperationException">The MultiChunkBuffer is read only.</exception>
         /// <exception cref="System.ArgumentNullException">stream</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">count</exception>
-        public void LoadFrom(Stream stream, int count)
+        public async Task LoadFromAsync(Stream stream, int count)
         {
             ThrowIfDisposed();
             EnsureIsWritable();
@@ -351,7 +351,7 @@ namespace MongoDB.Bson.IO
                 var chunkOffset = (_sliceOffset + position) % _chunkSize;
                 var chunkRemaining = _chunkSize - chunkOffset;
                 var bytesToRead = (count <= chunkRemaining) ? count : chunkRemaining;
-                var bytesRead = stream.Read(_chunks[chunkIndex].Bytes, chunkOffset, bytesToRead);
+                var bytesRead = await stream.ReadAsync(_chunks[chunkIndex].Bytes, chunkOffset, bytesToRead).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     throw new EndOfStreamException();

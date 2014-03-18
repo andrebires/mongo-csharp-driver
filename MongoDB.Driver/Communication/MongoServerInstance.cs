@@ -432,7 +432,7 @@ namespace MongoDB.Driver
             {
                 try
                 {
-                    await PingAsync(connection);
+                    await PingAsync(connection).ConfigureAwait(false);
                     await LookupServerInformationAsync(connection);
                 }
                 catch

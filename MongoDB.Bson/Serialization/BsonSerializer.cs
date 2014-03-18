@@ -24,6 +24,7 @@ using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.Serialization
 {
@@ -118,9 +119,9 @@ namespace MongoDB.Bson.Serialization
         /// <typeparam name="TNominalType">The nominal type of the object.</typeparam>
         /// <param name="bytes">The BSON byte array.</param>
         /// <returns>A TNominalType.</returns>
-        public static TNominalType Deserialize<TNominalType>(byte[] bytes)
+        public static async Task<TNominalType> DeserializeAsync<TNominalType>(byte[] bytes)
         {
-            return (TNominalType)Deserialize(bytes, typeof(TNominalType));
+            return (TNominalType) await DeserializeAsync(bytes, typeof(TNominalType)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -129,9 +130,9 @@ namespace MongoDB.Bson.Serialization
         /// <typeparam name="TNominalType">The nominal type of the object.</typeparam>
         /// <param name="stream">The BSON Stream.</param>
         /// <returns>A TNominalType.</returns>
-        public static TNominalType Deserialize<TNominalType>(Stream stream)
+        public static async Task<TNominalType> DeserializeAsync<TNominalType>(Stream stream)
         {
-            return (TNominalType)Deserialize(stream, typeof(TNominalType));
+            return (TNominalType) await DeserializeAsync(stream, typeof(TNominalType)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -230,11 +231,11 @@ namespace MongoDB.Bson.Serialization
         /// <param name="bytes">The BSON byte array.</param>
         /// <param name="nominalType">The nominal type of the object.</param>
         /// <returns>An object.</returns>
-        public static object Deserialize(byte[] bytes, Type nominalType)
+        public static Task<object> DeserializeAsync(byte[] bytes, Type nominalType)
         {
             using (var memoryStream = new MemoryStream(bytes))
             {
-                return Deserialize(memoryStream, nominalType);
+                return DeserializeAsync(memoryStream, nominalType);
             }
         }
 
@@ -244,9 +245,9 @@ namespace MongoDB.Bson.Serialization
         /// <param name="stream">The BSON Stream.</param>
         /// <param name="nominalType">The nominal type of the object.</param>
         /// <returns>An object.</returns>
-        public static object Deserialize(Stream stream, Type nominalType)
+        public static async Task<object> DeserializeAsync(Stream stream, Type nominalType)
         {
-            using (var bsonReader = BsonReader.Create(stream))
+            using (var bsonReader = await BsonReader.CreateAsync(stream).ConfigureAwait(false))
             {
                 return Deserialize(bsonReader, nominalType);
             }

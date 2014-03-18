@@ -192,7 +192,7 @@ namespace MongoDB.Bson.IO
         public void LoadFrom(Stream stream, int count)
         {
             ThrowIfDisposed();
-            _byteBuffer.LoadFrom(stream, count); // does not advance position
+            _byteBuffer.LoadFromAsync(stream, count); // does not advance position
         }
 
         /// <summary>

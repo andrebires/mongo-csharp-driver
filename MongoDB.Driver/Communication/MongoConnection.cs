@@ -203,7 +203,7 @@ namespace MongoDB.Driver.Internal
             tcpClient.NoDelay = true; // turn off Nagle
             tcpClient.ReceiveBufferSize = MongoDefaults.TcpReceiveBufferSize;
             tcpClient.SendBufferSize = MongoDefaults.TcpSendBufferSize;
-            tcpClient.Connect(ipEndPoint);
+            await tcpClient.ConnectAsync(ipEndPoint.Address, ipEndPoint.Port).ConfigureAwait(false);
 
             var stream = (Stream)tcpClient.GetStream();
             if (_serverInstance.Settings.UseSsl)
@@ -263,37 +263,34 @@ namespace MongoDB.Driver.Internal
 
             await _semaphore.WaitAsync();
             
-            //lock (_connectionLock)
+            try
             {
-                try
+                _lastUsedAt = DateTime.UtcNow;
+                var networkStream = await GetNetworkStreamAsync().ConfigureAwait(false);
+                var readTimeout = (int)_serverInstance.Settings.SocketTimeout.TotalMilliseconds;
+                if (readTimeout != 0)
                 {
-                    _lastUsedAt = DateTime.UtcNow;
-                    var networkStream = await GetNetworkStreamAsync().ConfigureAwait(false);
-                    var readTimeout = (int)_serverInstance.Settings.SocketTimeout.TotalMilliseconds;
-                    if (readTimeout != 0)
-                    {
-                        networkStream.ReadTimeout = readTimeout;
-                    }
+                    networkStream.ReadTimeout = readTimeout;
+                }
 
-                    using (var byteBuffer = ByteBufferFactory.LoadFrom(networkStream))
-                    using (var bsonBuffer = new BsonBuffer(byteBuffer, true))
-                    {
-                        byteBuffer.MakeReadOnly();
-                        var reply = new MongoReplyMessage<TDocument>(readerSettings, serializer, serializationOptions);
-                        reply.ReadFrom(bsonBuffer);
-                        return reply;
-                    }
-                }
-                catch (Exception ex)
+                using (var byteBuffer = await ByteBufferFactory.LoadFromAsync(networkStream).ConfigureAwait(false))
+                using (var bsonBuffer = new BsonBuffer(byteBuffer, true))
                 {
-                    HandleException(ex);
-                    throw;
-                }
-                finally
-                {
-                    _semaphore.Release();
+                    byteBuffer.MakeReadOnly();
+                    var reply = new MongoReplyMessage<TDocument>(readerSettings, serializer, serializationOptions);
+                    reply.ReadFrom(bsonBuffer);
+                    return reply;
                 }
             }
+            catch (Exception ex)
+            {
+                HandleException(ex);
+                throw;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }            
         }
 
         internal async Task SendMessageAsync(BsonBuffer buffer, int requestId)

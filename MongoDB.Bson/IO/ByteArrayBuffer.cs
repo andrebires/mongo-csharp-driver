@@ -258,7 +258,7 @@ namespace MongoDB.Bson.IO
         /// <exception cref="System.InvalidOperationException">Write operations are not allowed for read only buffers.</exception>
         /// <exception cref="System.ArgumentNullException">stream</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">count</exception>
-        public void LoadFrom(Stream stream, int count)
+        public async Task LoadFromAsync(Stream stream, int count)
         {
             ThrowIfDisposed();
             EnsureIsWritable();
@@ -275,7 +275,7 @@ namespace MongoDB.Bson.IO
             var position = _position; // don't advance position
             while (count > 0)
             {
-                var bytesRead = stream.Read(_bytes, _sliceOffset + position, count);
+                var bytesRead = await stream.ReadAsync(_bytes, _sliceOffset + position, count).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     throw new EndOfStreamException();

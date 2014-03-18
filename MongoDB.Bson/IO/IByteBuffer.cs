@@ -82,7 +82,7 @@ namespace MongoDB.Bson.IO
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="count">The count.</param>
-        void LoadFrom(Stream stream, int count);
+        Task LoadFromAsync(Stream stream, int count);
 
         /// <summary>
         /// Makes this buffer read only.

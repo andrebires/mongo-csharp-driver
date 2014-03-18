@@ -22,6 +22,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Shared;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson
 {
@@ -401,9 +402,9 @@ namespace MongoDB.Bson
         /// <param name="bytes">The byte array.</param>
         /// <returns>A BsonDocument.</returns>
         [Obsolete("Use BsonSerializer.Deserialize<BsonDocument> instead.")]
-        public static BsonDocument ReadFrom(byte[] bytes)
+        public static Task<BsonDocument> ReadFromAsync(byte[] bytes)
         {
-            return BsonSerializer.Deserialize<BsonDocument>(bytes);
+            return BsonSerializer.DeserializeAsync<BsonDocument>(bytes);
         }
 
         /// <summary>
@@ -412,9 +413,9 @@ namespace MongoDB.Bson
         /// <param name="stream">The stream.</param>
         /// <returns>A BsonDocument.</returns>
         [Obsolete("Use BsonSerializer.Deserialize<BsonDocument> instead.")]
-        public static BsonDocument ReadFrom(Stream stream)
+        public static Task<BsonDocument> ReadFromAsync(Stream stream)
         {
-            return BsonSerializer.Deserialize<BsonDocument>(stream);
+            return BsonSerializer.DeserializeAsync<BsonDocument>(stream);
         }
 
         /// <summary>
@@ -423,11 +424,11 @@ namespace MongoDB.Bson
         /// <param name="filename">The name of the file.</param>
         /// <returns>A BsonDocument.</returns>
         [Obsolete("Use BsonSerializer.Deserialize<BsonDocument> instead.")]
-        public static BsonDocument ReadFrom(string filename)
+        public static Task<BsonDocument> ReadFromAsync(string filename)
         {
             using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.None))
             {
-                return BsonSerializer.Deserialize<BsonDocument>(stream);
+                return BsonSerializer.DeserializeAsync<BsonDocument>(stream);
             }
         }
 
