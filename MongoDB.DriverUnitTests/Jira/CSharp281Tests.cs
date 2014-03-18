@@ -40,12 +40,12 @@ namespace MongoDB.DriverUnitTests.Jira
         public void TestPopFirst()
         {
             var document = new BsonDocument("x", new BsonArray { 1, 2, 3 });
-            _collection.RemoveAll();
-            _collection.Insert(document);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(document);
 
             var query = Query.EQ("_id", document["_id"]);
             var update = Update.PopFirst("x");
-            _collection.Update(query, update);
+            _collection.UpdateAsync(query, update);
 
             document = _collection.FindOne();
             var array = document["x"].AsBsonArray;
@@ -58,12 +58,12 @@ namespace MongoDB.DriverUnitTests.Jira
         public void TestPopLast()
         {
             var document = new BsonDocument("x", new BsonArray { 1, 2, 3 });
-            _collection.RemoveAll();
-            _collection.Insert(document);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(document);
 
             var query = Query.EQ("_id", document["_id"]);
             var update = Update.PopLast("x");
-            _collection.Update(query, update);
+            _collection.UpdateAsync(query, update);
 
             document = _collection.FindOne();
             var array = document["x"].AsBsonArray;

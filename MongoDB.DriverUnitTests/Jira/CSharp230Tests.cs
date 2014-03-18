@@ -43,12 +43,12 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp230
             }
 
             Assert.IsFalse(_collection.IndexExists("x"));
-            _collection.CreateIndex("x");
+            _collection.CreateIndexAsync("x");
             Assert.IsTrue(_collection.IndexExists("x"));
 
             _collection.Drop();
             Assert.IsFalse(_collection.IndexExists("x"));
-            _collection.CreateIndex("x");
+            _collection.CreateIndexAsync("x");
             Assert.IsTrue(_collection.IndexExists("x"));
         }
     }

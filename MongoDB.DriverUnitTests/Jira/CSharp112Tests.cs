@@ -61,7 +61,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
         public void TestDeserializeDouble()
         {
             // test with valid values
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             var values = new object[]
             {
                 0,
@@ -83,7 +83,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -94,7 +94,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
             }
 
             // test with values that cause data loss
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             values = new object[]
             {
                 0x7eeeeeeeeeeeeeee,
@@ -109,7 +109,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -134,7 +134,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
         public void TestDeserializeInt32()
         {
             // test with valid values
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             var values = new object[]
             {
                 0L,
@@ -155,7 +155,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -166,7 +166,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
             }
 
             // test with values that cause overflow
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             values = new object[]
             {
                 ((long)Int32.MinValue - 1),
@@ -183,7 +183,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -204,7 +204,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
             }
 
             // test with values that cause truncation
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             values = new object[]
             {
                 -1.5,
@@ -217,7 +217,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -242,7 +242,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
         public void TestDeserializeInt64()
         {
             // test with valid values
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             var values = new object[]
             {
                 0,
@@ -268,7 +268,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -279,7 +279,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
             }
 
             // test with values that cause overflow
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             values = new object[]
             {
                 double.MaxValue,
@@ -292,7 +292,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -313,7 +313,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
             }
 
             // test with values that cause data truncation
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             values = new object[]
             {
                 -1.5,
@@ -326,7 +326,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp112
                     { "_id", i + 1 },
                     { "N", BsonValue.Create(values[i]) }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsync(document);
             }
 
             for (int i = 0; i < values.Length; i++)

@@ -51,7 +51,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp714
         [Test]
         public void TestGuidsAreAscending()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             CreateTestData();
             // sort descending just so we are not retrieving in insertion order
             var cursor = _collection.FindAll().SetSortOrder(SortBy.Descending("Guid"));
@@ -66,9 +66,9 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp714
         {
             for (var i=0; i<__maxNoOfDocuments; i++) 
             {
-                _collection.Insert(new C { Id = i, Guid = (Guid)_generator.GenerateId(null, null) });
+                _collection.InsertAsyncAsync(new C { Id = i, Guid = (Guid)_generator.GenerateId(null, null) });
             }
-            _collection.CreateIndex("Guid");
+            _collection.CreateIndexAsync("Guid");
         }
     }
 }

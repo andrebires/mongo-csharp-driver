@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Internal
 {
@@ -53,14 +54,14 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>A MongoServerInstance.</returns>
-        MongoServerInstance ChooseServerInstance(ReadPreference readPreference);
+        Task<MongoServerInstance> ChooseServerInstanceAsync(ReadPreference readPreference);
 
         /// <summary>
         /// Connects to the instances respecting the timeout and readPreference.
         /// </summary>
         /// <param name="timeout">The timeout.</param>
         /// <param name="readPreference">The read preference.</param>
-        void Connect(TimeSpan timeout, ReadPreference readPreference);
+        Task ConnectAsync(TimeSpan timeout, ReadPreference readPreference);
 
         /// <summary>
         /// Disconnects the server.
@@ -70,11 +71,11 @@ namespace MongoDB.Driver.Internal
         /// <summary>
         /// Checks whether the server is alive (throws an exception if not).
         /// </summary>
-        void Ping();
+        Task PingAsync();
 
         /// <summary>
         /// Verifies the state of the server.
         /// </summary>
-        void VerifyState();
+        Task VerifyStateAsync();
     }
 }

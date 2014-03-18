@@ -40,7 +40,7 @@ namespace MongoDB.DriverUnitTests.Jira
         public void TestInsertNullDocument()
         {
             BsonDocument document = null;
-            var ex = Assert.Catch<ArgumentNullException>(() => _collection.Insert(document));
+            var ex = Assert.Catch<ArgumentNullException>(() => _collection.InsertAsyncAsync(document));
             Assert.AreEqual("document", ex.ParamName);
         }
 
@@ -48,7 +48,7 @@ namespace MongoDB.DriverUnitTests.Jira
         public void TestInsertNullBatch()
         {
             BsonDocument[] batch = null;
-            var ex = Assert.Catch<ArgumentNullException>(() => _collection.InsertBatch(batch));
+            var ex = Assert.Catch<ArgumentNullException>(() => _collection.InsertBatchAsyncAsyncAsync(batch));
             Assert.AreEqual("documents", ex.ParamName);
         }
 
@@ -56,14 +56,14 @@ namespace MongoDB.DriverUnitTests.Jira
         public void TestInsertBatchWithNullDocument()
         {
             BsonDocument[] batch = new BsonDocument[] { null };
-            Assert.Throws<ArgumentException>(() => _collection.InsertBatch(batch), "Batch contains one or more null documents.");
+            Assert.Throws<ArgumentException>(() => _collection.InsertBatchAsyncAsyncAsync(batch), "Batch contains one or more null documents.");
         }
 
         [Test]
         public void TestSaveNullDocument()
         {
             BsonDocument document = null;
-            var ex = Assert.Catch<ArgumentNullException>(() => _collection.Save(document));
+            var ex = Assert.Catch<ArgumentNullException>(() => _collection.SaveAsyncAsyncAsync(document));
             Assert.AreEqual("document", ex.ParamName);
         }
     }

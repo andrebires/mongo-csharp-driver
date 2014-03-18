@@ -19,6 +19,7 @@ using System.Linq;
 using MongoDB.Bson.IO;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Support;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -37,13 +38,13 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public IEnumerable<WriteConcernResult> Execute(MongoConnection connection)
+        public async Task<IEnumerable<WriteConcernResult>> ExecuteAsync(MongoConnection connection)
         {
             var serverInstance = connection.ServerInstance;
             if (serverInstance.Supports(FeatureId.WriteCommands) && _args.WriteConcern.Enabled)
             {
                 var emulator = new InsertOpcodeOperationEmulator(_args);
-                return emulator.Execute(connection);
+                return await emulator.ExecuteAsync(connection);
             }
 
             var results = WriteConcern.Enabled ? new List<WriteConcernResult>() : null;
@@ -78,7 +79,7 @@ namespace MongoDB.Driver.Operations
                         message.WriteTo(buffer); // consumes as much of nextBatch as fits in one message
                         batchProgress = message.BatchProgress;
 
-                        sendBatchResult = SendBatch(connection, buffer, message.RequestId, batchProgress.IsLast);
+                        sendBatchResult = await SendBatchAsync(connection, buffer, message.RequestId, batchProgress.IsLast);
                     }
 
                     // note: getLastError is sent even when WriteConcern is not enabled if ContinueOnError is false
@@ -87,7 +88,7 @@ namespace MongoDB.Driver.Operations
                         WriteConcernResult writeConcernResult;
                         try
                         {
-                            writeConcernResult = ReadWriteConcernResult(connection, sendBatchResult);
+                            writeConcernResult = await ReadWriteConcernResultAsync(connection, sendBatchResult);
                         }
                         catch (WriteConcernException ex)
                         {
@@ -128,14 +129,14 @@ namespace MongoDB.Driver.Operations
         }
 
         // private methods
-        private SendMessageWithWriteConcernResult SendBatch(MongoConnection connection, BsonBuffer buffer, int requestId, bool isLast)
+        private Task<SendMessageWithWriteConcernResult> SendBatchAsync(MongoConnection connection, BsonBuffer buffer, int requestId, bool isLast)
         {
             var writeConcern = WriteConcern;
             if (!writeConcern.Enabled && !_continueOnError && !isLast)
             {
                 writeConcern = WriteConcern.Acknowledged;
             }
-            return SendMessageWithWriteConcern(connection, buffer, requestId, ReaderSettings, WriterSettings, writeConcern);
+            return SendMessageWithWriteConcernAsync(connection, buffer, requestId, ReaderSettings, WriterSettings, writeConcern);
         }
     }
 }

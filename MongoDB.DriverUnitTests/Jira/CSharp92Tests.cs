@@ -37,8 +37,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp92
             var collection = Configuration.TestCollection;
 
             var document = new BsonDocument { { "_id", -1 }, { "P", "x" } };
-            collection.RemoveAll();
-            collection.Insert(document);
+            collection.RemoveAllAsync();
+            collection.InsertAsyncAsync(document);
 
             var fetched = collection.FindOne();
             Assert.IsInstanceOf<BsonDocument>(fetched);
@@ -54,8 +54,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp92
             var collection = Configuration.GetTestCollection<C>();
 
             var document = new C { Id = -1, P = "x" };
-            collection.RemoveAll();
-            collection.Insert(document);
+            collection.RemoveAllAsync();
+            collection.InsertAsyncAsync(document);
 
             var fetched = collection.FindOne();
             Assert.IsInstanceOf<C>(fetched);

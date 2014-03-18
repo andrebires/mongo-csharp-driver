@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -31,7 +32,7 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public BulkWriteResult Execute(MongoConnection connection)
+        public async Task<BulkWriteResult> ExecuteAsync(MongoConnection connection)
         {
             var serverInstance = connection.ServerInstance;
             if (!serverInstance.Supports(FeatureId.WriteOpcodes))
@@ -52,7 +53,7 @@ namespace MongoDB.Driver.Operations
                     continue;
                 }
 
-                var batchResult = EmulateSingleRequest(connection, request, originalIndex);
+                var batchResult = await EmulateSingleRequestAsync(connection, request, originalIndex);
                 batchResults.Add(batchResult);
 
                 hasWriteErrors |= batchResult.HasWriteErrors;
@@ -64,6 +65,6 @@ namespace MongoDB.Driver.Operations
         }
 
         // protected methods
-        protected abstract BulkWriteBatchResult EmulateSingleRequest(MongoConnection connection, WriteRequest request, int originalIndex);
+        protected abstract Task<BulkWriteBatchResult> EmulateSingleRequestAsync(MongoConnection connection, WriteRequest request, int originalIndex);
     }
 }

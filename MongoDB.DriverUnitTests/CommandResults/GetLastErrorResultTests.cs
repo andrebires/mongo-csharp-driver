@@ -41,7 +41,7 @@ namespace MongoDB.DriverUnitTests.CommandResults
         {
             using (_database.RequestStart())
             {
-                _collection.Insert(new BsonDocument());
+                _collection.InsertAsyncAsync(new BsonDocument());
                 var result = _server.GetLastError();
                 Assert.IsFalse(result.HasLastErrorMessage);
                 Assert.IsFalse(result.UpdatedExisting);
@@ -60,11 +60,11 @@ namespace MongoDB.DriverUnitTests.CommandResults
                     { "_id", id },
                     { "x", 1 }
                 };
-                _collection.Insert(document);
+                _collection.InsertAsyncAsync(document);
 
                 var query = Query.EQ("_id", id);
                 var update = Update.Inc("x", 1);
-                _collection.Update(query, update);
+                _collection.UpdateAsync(query, update);
                 var result = _server.GetLastError();
                 Assert.IsFalse(result.HasLastErrorMessage);
                 Assert.IsTrue(result.UpdatedExisting);

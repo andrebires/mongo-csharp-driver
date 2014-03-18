@@ -34,7 +34,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp613
             var collection = Configuration.TestCollection;
 
             collection.Drop();
-            collection.Save(new C { Id = 0, S = 2 });
+            collection.SaveAsyncAsyncAsyncAsync(new C { Id = 0, S = 2 });
 
             var query = from c in collection.AsQueryable<C>()
                         where c.S == 2

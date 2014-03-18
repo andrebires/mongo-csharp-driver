@@ -24,6 +24,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Builders;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -333,11 +334,11 @@ namespace MongoDB.Driver
         /// Returns the number of documents that match the query (ignores Skip and Limit, unlike Size which honors them).
         /// </summary>
         /// <returns>The number of documents that match the query.</returns>
-        public virtual long Count()
+        public virtual Task<long> CountAsync()
         {
             _isFrozen = true;
             var args = new CountArgs { Query = _query };
-            return _collection.Count(args);
+            return _collection.CountAsync(args);
         }
 
         /// <summary>
@@ -655,7 +656,7 @@ namespace MongoDB.Driver
         /// Returns the size of the result set (honors Skip and Limit, unlike Count which does not).
         /// </summary>
         /// <returns>The size of the result set.</returns>
-        public virtual long Size()
+        public virtual Task<long> SizeAsync()
         {
             _isFrozen = true;
             var args = new CountArgs
@@ -664,7 +665,7 @@ namespace MongoDB.Driver
                 Limit = (_limit == 0) ? (int?)null : _limit,
                 Skip = (_skip == 0) ? (int?)null : _skip
             };
-            return _collection.Count(args);
+            return _collection.CountAsync(args);
         }
 
         // protected methods
@@ -693,7 +694,7 @@ namespace MongoDB.Driver
     /// to the server until you begin enumerating the results.
     /// </summary>
     /// <typeparam name="TDocument">The type of the documents returned.</typeparam>
-    public class MongoCursor<TDocument> : MongoCursor, IEnumerable<TDocument>
+    public class MongoCursor<TDocument> : MongoCursor, IEnumerableAsync<TDocument>
     {
         // constructors
         /// <summary>
@@ -709,13 +710,22 @@ namespace MongoDB.Driver
         {
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public virtual IEnumerator<TDocument> GetEnumerator()
+        {
+            return GetEnumeratorAsync().Result;
+        }
+
         // public methods
         /// <summary>
         /// Returns an enumerator that can be used to enumerate the cursor. Normally you will use the foreach statement
         /// to enumerate the cursor (foreach will call GetEnumerator for you).
         /// </summary>
         /// <returns>An enumerator that can be used to iterate over the cursor.</returns>
-        public virtual IEnumerator<TDocument> GetEnumerator()
+        public virtual Task<IEnumeratorAsync<TDocument>> GetEnumeratorAsync()
         {
             IsFrozen = true;
 
@@ -767,7 +777,7 @@ namespace MongoDB.Driver
                 Serializer,
                 Skip);
 
-            return readOperation.Execute(new MongoCursorConnectionProvider(Server, readPreference));
+            return readOperation.ExecuteAsync(new MongoCursorConnectionProvider(Server, readPreference));
         }
 
         /// <summary>
@@ -1008,12 +1018,12 @@ namespace MongoDB.Driver
                 _readPreference = readPreference;
             }
 
-            public MongoConnection AcquireConnection()
+            public async Task<MongoConnection> AcquireConnectionAsync()
             {
                 if (_serverInstance == null)
                 {
                     // first time we need a connection let Server.AcquireConnection pick the server instance
-                    var connection = _server.AcquireConnection(_readPreference);
+                    var connection = await _server.AcquireConnectionAsync(_readPreference).ConfigureAwait(false);
                     _serverInstance = connection.ServerInstance;
                     return connection;
                 }
@@ -1031,3 +1041,4 @@ namespace MongoDB.Driver
         }
     }
 }
+

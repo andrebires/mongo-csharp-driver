@@ -91,26 +91,26 @@ namespace MongoDB.DriverUnitTests.Builders
                 {
                     var collection = Configuration.TestDatabase.GetCollection<BsonDocument>("test_meta_text_sort");
                     collection.Drop();
-                    collection.CreateIndex(IndexKeys.Text("textfield"));
-                    collection.Insert(new BsonDocument
+                    collection.CreateIndexAsyncAsync(IndexKeys.Text("textfield"));
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 1 },
                         { "textfield", "The quick brown fox jumped" },
                         { "z", 1 }
                     });
-                    collection.Insert(new BsonDocument
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 2 },
                         { "textfield", "over the lazy brown dog and brown cat" },
                         { "z", 2 }
                     });
-                    collection.Insert(new BsonDocument
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 3 },
                         { "textfield", "over the lazy brown dog and brown cat" },
                         { "z", 4 }
                     });
-                    collection.Insert(new BsonDocument
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 4 },
                         { "textfield", "over the lazy brown dog and brown cat" },

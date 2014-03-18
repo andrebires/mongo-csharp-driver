@@ -18,6 +18,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Support;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -45,16 +46,16 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public override BulkWriteResult Execute(MongoConnection connection)
+        public override Task<BulkWriteResult> ExecuteAsync(MongoConnection connection)
         {
             var serverInstance = connection.ServerInstance;
             if (!serverInstance.Supports(FeatureId.WriteCommands))
             {
                 var emulator = new BulkDeleteOperationEmulator(_args);
-                return emulator.Execute(connection);
+                return emulator.ExecuteAsync(connection);
             }
 
-            return base.Execute(connection);
+            return base.ExecuteAsync(connection);
         }
 
         // protected methods

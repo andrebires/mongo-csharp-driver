@@ -47,8 +47,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp134
         {
             var dbRef = new MongoDBRef("test", ObjectId.GenerateNewId());
             var c = new C { DbRef = dbRef };
-            _collection.RemoveAll();
-            _collection.Insert(c);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(c);
 
             var rehydrated = _collection.FindOne();
             Assert.IsNull(rehydrated.DbRef.DatabaseName);

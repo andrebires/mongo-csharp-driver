@@ -18,6 +18,7 @@ using System.IO;
 using System.Linq;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -229,7 +230,7 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Flushes any pending data to the output destination.
         /// </summary>
-        public abstract void Flush();
+        public abstract Task FlushAsync();
 
         /// <summary>
         /// Writes BSON binary data to the writer.

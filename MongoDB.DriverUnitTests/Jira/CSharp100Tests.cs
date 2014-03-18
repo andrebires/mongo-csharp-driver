@@ -51,17 +51,17 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp100
             var database = Configuration.TestDatabase;
             var collection = Configuration.TestCollection;
 
-            collection.RemoveAll();
+            collection.RemoveAllAsync();
             var obj = new ChildClass { SomeProperty = null };
-            collection.Save(obj);
+            collection.SaveAsyncAsyncAsyncAsync(obj);
             obj = new ChildClass { SomeProperty = new List<SomeClass>() };
-            collection.Save(obj);
+            collection.SaveAsyncAsyncAsyncAsync(obj);
             obj = new ChildClass { SomeProperty = new List<SomeClass> { new SomeClass() } };
-            collection.Save(obj);
+            collection.SaveAsyncAsyncAsyncAsync(obj);
             obj = new ChildClass { SomeProperty = new List<SomeClass> { new SomeClass(), new SomeClass() } };
-            collection.Save(obj);
+            collection.SaveAsyncAsyncAsyncAsync(obj);
             obj = new ChildClass { SomeProperty = new[] { new SomeClass(), new SomeClass() } };
-            collection.Save(obj);
+            collection.SaveAsyncAsyncAsyncAsync(obj);
         }
     }
 }

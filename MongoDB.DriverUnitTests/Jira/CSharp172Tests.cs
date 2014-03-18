@@ -47,8 +47,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp172
         {
             var obj1 = new C { N = 1 };
             Assert.IsNullOrEmpty(obj1.Id);
-            _collection.RemoveAll();
-            _collection.Insert(obj1);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(obj1);
             Assert.IsNotNullOrEmpty(obj1.Id);
 
             var obj2 = _collection.FindOne();

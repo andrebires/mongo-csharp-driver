@@ -23,6 +23,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Support;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -43,7 +44,7 @@ namespace MongoDB.Driver.Operations
         protected abstract string RequestsElementName { get; }
 
         // public methods
-        public virtual BulkWriteResult Execute(MongoConnection connection)
+        public virtual async Task<BulkWriteResult> ExecuteAsync(MongoConnection connection)
         {
             var batchResults = new List<BulkWriteBatchResult>();
             var remainingRequests = Enumerable.Empty<WriteRequest>();
@@ -62,7 +63,7 @@ namespace MongoDB.Driver.Operations
                         break;
                     }
 
-                    var batchResult = ExecuteBatch(connection, batch, originalIndex);
+                    var batchResult = await ExecuteBatchAsync(connection, batch, originalIndex);
                     batchResults.Add(batchResult);
 
                     hasWriteErrors |= batchResult.HasWriteErrors;
@@ -118,12 +119,12 @@ namespace MongoDB.Driver.Operations
                 BsonSerializer.LookupSerializer(typeof(CommandResult))); // resultSerializer
         }
 
-        private BulkWriteBatchResult ExecuteBatch(MongoConnection connection, Batch<WriteRequest> batch, int originalIndex)
+        private async Task<BulkWriteBatchResult> ExecuteBatchAsync(MongoConnection connection, Batch<WriteRequest> batch, int originalIndex)
         {
             var batchSerializer = CreateBatchSerializer();
             var writeCommand = CreateWriteCommand(batchSerializer, batch);
             var writeCommandOperation = CreateWriteCommandOperation(writeCommand);
-            var writeCommandResult = writeCommandOperation.Execute(connection);
+            var writeCommandResult = await writeCommandOperation.ExecuteAsync(connection);
             var batchProgress = batchSerializer.BatchProgress;
 
             var indexMap = new IndexMap.RangeBased(0, originalIndex, batchProgress.BatchCount);

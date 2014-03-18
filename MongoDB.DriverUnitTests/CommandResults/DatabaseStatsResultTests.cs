@@ -43,7 +43,7 @@ namespace MongoDB.DriverUnitTests.CommandResults
                 if (instance.InstanceType != MongoServerInstanceType.ShardRouter)
                 {
                     // make sure collection and database exist
-                    _collection.Insert(new BsonDocument());
+                    _collection.InsertAsyncAsync(new BsonDocument());
 
                     var result = _database.GetStats();
                     Assert.IsTrue(result.Ok);

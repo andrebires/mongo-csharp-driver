@@ -16,6 +16,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -706,10 +707,10 @@ namespace MongoDB.Bson.IO
         /// Writes all the data in the buffer to a Stream.
         /// </summary>
         /// <param name="stream">The Stream.</param>
-        public void WriteTo(Stream stream)
+        public Task WriteToAsync(Stream stream)
         {
             ThrowIfDisposed();
-            _byteBuffer.WriteTo(stream);
+            return _byteBuffer.WriteToAsync(stream);
         }
 
         /// <summary>

@@ -162,7 +162,7 @@ namespace MongoDB.DriverUnitTests
                 _database.SetProfilingLevel(ProfilingLevel.All);
                 try
                 {
-                    _collection.Insert(new BsonDocument("foo", 1));
+                    _collection.InsertAsyncAsync(new BsonDocument("foo", 1));
                 }
                 finally
                 {

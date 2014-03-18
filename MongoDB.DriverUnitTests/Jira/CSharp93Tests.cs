@@ -35,13 +35,13 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp93
             }
             else
             {
-                collection.Insert(new BsonDocument()); // make sure collection exists
+                collection.InsertAsyncAsync(new BsonDocument()); // make sure collection exists
             }
 
-            collection.CreateIndex("x", "y");
+            collection.CreateIndexAsync("x", "y");
             collection.DropIndex("x", "y");
 
-            collection.CreateIndex(IndexKeys.Ascending("x", "y"));
+            collection.CreateIndexAsyncAsync(IndexKeys.Ascending("x", "y"));
             collection.DropIndex(IndexKeys.Ascending("x", "y"));
         }
 
@@ -58,11 +58,11 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp93
             }
             else
             {
-                collection.Insert(new BsonDocument()); // make sure collection exists
+                collection.InsertAsyncAsync(new BsonDocument()); // make sure collection exists
             }
 
-            collection.CreateIndex(IndexKeys.Ascending("x"), IndexOptions.SetUnique(true));
-            collection.CreateIndex(IndexKeys.Ascending("y"), IndexOptions.SetUnique(false));
+            collection.CreateIndexAsyncAsync(IndexKeys.Ascending("x"), IndexOptions.SetUnique(true));
+            collection.CreateIndexAsyncAsync(IndexKeys.Ascending("y"), IndexOptions.SetUnique(false));
         }
     }
 }

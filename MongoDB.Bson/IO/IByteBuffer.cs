@@ -15,6 +15,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -157,6 +158,6 @@ namespace MongoDB.Bson.IO
         /// Writes Length bytes from this buffer starting at Position 0 to a stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        void WriteTo(Stream stream);
+        Task WriteToAsync(Stream stream);
     }
 }

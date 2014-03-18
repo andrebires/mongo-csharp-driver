@@ -31,9 +31,9 @@ namespace MongoDB.DriverUnitTests.Jira
         {
             _collection = Configuration.GetTestCollection<BsonDocument>();
             if (_collection.Exists()) { _collection.Drop(); }
-            _collection.Insert(new BsonDocument { { "x", 1 } });
-            _collection.Insert(new BsonDocument { { "x", 2 }, { "Length", BsonNull.Value } });
-            _collection.Insert(new BsonDocument { { "x", 3 }, { "Length", 123 } });
+            _collection.InsertAsyncAsync(new BsonDocument { { "x", 1 } });
+            _collection.InsertAsyncAsync(new BsonDocument { { "x", 2 }, { "Length", BsonNull.Value } });
+            _collection.InsertAsyncAsync(new BsonDocument { { "x", 3 }, { "Length", 123 } });
         }
 
         [Test]

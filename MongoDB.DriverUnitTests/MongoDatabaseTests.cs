@@ -46,7 +46,7 @@ namespace MongoDB.DriverUnitTests
             var collectionName = "testcollectionexists";
             Assert.IsFalse(_database.CollectionExists(collectionName));
 
-            _database.GetCollection(collectionName).Insert(new BsonDocument());
+            _database.GetCollection(collectionName).InsertAsyncAsync(new BsonDocument());
             Assert.IsTrue(_database.CollectionExists(collectionName));
         }
 
@@ -76,7 +76,7 @@ namespace MongoDB.DriverUnitTests
             var collectionName = "testdropcollection";
             Assert.IsFalse(_database.CollectionExists(collectionName));
 
-            _database.GetCollection(collectionName).Insert(new BsonDocument());
+            _database.GetCollection(collectionName).InsertAsyncAsync(new BsonDocument());
             Assert.IsTrue(_database.CollectionExists(collectionName));
 
             _database.DropCollection(collectionName);
@@ -170,7 +170,7 @@ namespace MongoDB.DriverUnitTests
             var collectionName = "testdbref";
             var collection = _database.GetCollection(collectionName);
             var document = new BsonDocument { { "_id", ObjectId.GenerateNewId() }, { "P", "x" } };
-            collection.Insert(document);
+            collection.InsertAsyncAsync(document);
 
             var dbRef = new MongoDBRef(collectionName, document["_id"].AsObjectId);
             var fetched = _database.FetchDBRef(dbRef);
@@ -210,9 +210,9 @@ namespace MongoDB.DriverUnitTests
         public void TestGetCollectionNames()
         {
             _database.Drop();
-            _database.GetCollection("a").Insert(new BsonDocument("a", 1));
-            _database.GetCollection("b").Insert(new BsonDocument("b", 1));
-            _database.GetCollection("c").Insert(new BsonDocument("c", 1));
+            _database.GetCollection("a").InsertAsyncAsync(new BsonDocument("a", 1));
+            _database.GetCollection("b").InsertAsyncAsync(new BsonDocument("b", 1));
+            _database.GetCollection("c").InsertAsyncAsync(new BsonDocument("c", 1));
             var collectionNames = _database.GetCollectionNames();
             Assert.AreEqual(new[] { "a", "b", "c", "system.indexes" }, collectionNames);
         }
@@ -227,7 +227,7 @@ namespace MongoDB.DriverUnitTests
                 {
                     var collection = Configuration.TestCollection;
                     if (collection.Exists()) { collection.Drop(); }
-                    collection.Insert(new BsonDocument("x", 1));
+                    collection.InsertAsyncAsync(new BsonDocument("x", 1));
                     _database.SetProfilingLevel(ProfilingLevel.All);
                     var count = collection.Count();
                     _database.SetProfilingLevel(ProfilingLevel.None);
@@ -256,7 +256,7 @@ namespace MongoDB.DriverUnitTests
             Assert.IsFalse(_database.CollectionExists(collectionName1));
             Assert.IsFalse(_database.CollectionExists(collectionName2));
 
-            _database.GetCollection(collectionName1).Insert(new BsonDocument());
+            _database.GetCollection(collectionName1).InsertAsyncAsync(new BsonDocument());
             Assert.IsTrue(_database.CollectionExists(collectionName1));
             Assert.IsFalse(_database.CollectionExists(collectionName2));
 
@@ -281,8 +281,8 @@ namespace MongoDB.DriverUnitTests
             Assert.IsFalse(_database.CollectionExists(collectionName1));
             Assert.IsFalse(_database.CollectionExists(collectionName2));
 
-            _database.GetCollection(collectionName1).Insert(new BsonDocument());
-            _database.GetCollection(collectionName2).Insert(new BsonDocument());
+            _database.GetCollection(collectionName1).InsertAsyncAsync(new BsonDocument());
+            _database.GetCollection(collectionName2).InsertAsyncAsync(new BsonDocument());
             Assert.IsTrue(_database.CollectionExists(collectionName1));
             Assert.IsTrue(_database.CollectionExists(collectionName2));
 
@@ -349,7 +349,7 @@ namespace MongoDB.DriverUnitTests
                 else
                 {
                     var collection = _database.GetCollection("system.users");
-                    collection.RemoveAll();
+                    collection.RemoveAllAsync();
                 }
 
                 _database.AddUser(new MongoUser(username, new PasswordEvidence(password), isReadOnly));

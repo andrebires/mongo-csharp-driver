@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Internal
 {
@@ -26,7 +28,8 @@ namespace MongoDB.Driver.Internal
     internal sealed class DirectMongoServerProxy : IMongoServerProxy
     {
         // private fields
-        private readonly object _stateLock = new object();
+
+        private SemaphoreSlim _semaphore = new SemaphoreSlim(1);        
         private readonly MongoServerSettings _settings;
         private readonly MongoServerInstance _instance;
         private int _connectionAttempt;
@@ -71,9 +74,15 @@ namespace MongoDB.Driver.Internal
         {
             get 
             {
-                lock (_stateLock)
+                //lock (_stateLock)
+                _semaphore.Wait();
+                try
                 {
                     return _connectionAttempt;
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
         }
@@ -101,9 +110,16 @@ namespace MongoDB.Driver.Internal
         {
             get 
             {
-                lock (_stateLock)
+                //lock (_stateLock)
+
+                _semaphore.Wait();
+                try
                 {
                     return _instance.State;
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
         }
@@ -114,14 +130,12 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>A MongoServerInstance.</returns>
-        public MongoServerInstance ChooseServerInstance(ReadPreference readPreference)
+        public async Task<MongoServerInstance> ChooseServerInstanceAsync(ReadPreference readPreference)
         {
             if (_instance.State != MongoServerState.Connected)
             {
-                lock (_stateLock)
-                {
-                    Connect(_settings.ConnectTimeout, readPreference);
-                }
+                // Synchronization is not needed in this method                
+                await ConnectAsync(_settings.ConnectTimeout, readPreference);                
             }
 
             if (_instance.State == MongoServerState.Connected)
@@ -143,11 +157,13 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="timeout">The timeout.</param>
         /// <param name="readPreference">The read preference.</param>
-        public void Connect(TimeSpan timeout, ReadPreference readPreference)
+        public async Task ConnectAsync(TimeSpan timeout, ReadPreference readPreference)
         {
             if (_instance.State != MongoServerState.Connected)
             {
-                lock (_stateLock)
+                await _semaphore.WaitAsync().ConfigureAwait(false);
+                //lock (_stateLock)
+                try
                 {
                     if (_instance.State != MongoServerState.Connected)
                     {
@@ -158,7 +174,9 @@ namespace MongoDB.Driver.Internal
                             try
                             {
                                 _instance.Address = address;
-                                _instance.Connect(); // TODO: what about timeout?
+
+                                // TODO: what about timeout? -> var cts = new CancellationTokenSource(timeout); Need a cancelation token
+                                await _instance.ConnectAsync().ConfigureAwait(false); 
 
                                 if (_settings.ReplicaSetName != null &&
                                     (_instance.InstanceType != MongoServerInstanceType.ReplicaSetMember || _instance.ReplicaSetInformation.Name != _settings.ReplicaSetName))
@@ -188,6 +206,10 @@ namespace MongoDB.Driver.Internal
                         throw connectionException;
                     }
                 }
+                finally
+                {
+                    _semaphore.Release();
+                }
             }
         }
 
@@ -196,24 +218,30 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         public void Disconnect()
         {
-            lock (_stateLock)
+            _semaphore.Wait();
+            //lock (_stateLock)
+            try
             {
                 _instance.Disconnect();
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
         /// <summary>
         /// Pings the server.
         /// </summary>
-        public void Ping()
+        public Task PingAsync()
         {
-            _instance.Ping();
+            return _instance.PingAsync();
         }
 
         /// <summary>
         /// Verifies the state of the server.
         /// </summary>
-        public void VerifyState()
+        public async Task VerifyStateAsync()
         {
             var state = _instance.State;
             // if we are disconnected or disconnecting, then our state is correct...
@@ -221,11 +249,22 @@ namespace MongoDB.Driver.Internal
             {
                 return;
             }
-            
-            lock (_stateLock)
+
+            await _semaphore.WaitAsync();
+            //lock (_stateLock)
+            try
+            {                
+                await _instance.VerifyStateAsync();
+            }
+            finally
             {
-                _instance.VerifyState();
+                _semaphore.Release();
             }
         }
-    }
+    }   
+
+
+
 }
+
+

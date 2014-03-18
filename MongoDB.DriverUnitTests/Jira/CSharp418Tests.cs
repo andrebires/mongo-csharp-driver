@@ -51,7 +51,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp418
         public void TestQueryAgainstInheritedField()
         {
             _collection.Drop();
-            _collection.Insert(new D { X = 1, Y = 2 });
+            _collection.InsertAsyncAsync(new D { X = 1, Y = 2 });
 
             var query = from d in _collection.AsQueryable<D>()
                         where d.X == 1

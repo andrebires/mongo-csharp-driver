@@ -62,12 +62,12 @@ namespace MongoDB.DriverUnitTests.Jira
 
         private void TestSetup()
         {
-            _collection.RemoveAll();
-            _collection.Insert(new C() { Id = 1});
-            _collection.Insert(new C() { Id = 2, Foo = null});
-            _collection.Insert(new C() { Id = 3, Foo = new int[] {1}});
-            _collection.Insert(new C() { Id = 4, Foo = new int[] { 1, 2 } });
-            _collection.Insert(new C() { Id = 5, Foo = new int[] { 1, 2, 3 } });
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(new C() { Id = 1});
+            _collection.InsertAsyncAsync(new C() { Id = 2, Foo = null});
+            _collection.InsertAsyncAsync(new C() { Id = 3, Foo = new int[] {1}});
+            _collection.InsertAsyncAsync(new C() { Id = 4, Foo = new int[] { 1, 2 } });
+            _collection.InsertAsyncAsync(new C() { Id = 5, Foo = new int[] { 1, 2, 3 } });
         }
     }
 }

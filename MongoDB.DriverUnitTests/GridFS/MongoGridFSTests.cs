@@ -39,8 +39,8 @@ namespace MongoDB.DriverUnitTests.GridFS
             _server = Configuration.TestServer;
             _database = Configuration.TestDatabase;
             _gridFS = _database.GridFS;
-            _gridFS.Chunks.RemoveAll();
-            _gridFS.Files.RemoveAll();
+            _gridFS.Chunks.RemoveAllAsync();
+            _gridFS.Files.RemoveAllAsync();
         }
 
         [Test]

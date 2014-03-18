@@ -20,6 +20,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -72,9 +73,9 @@ namespace MongoDB.Driver.Operations
             }
         }
 
-        public IEnumerator<TDocument> Execute(IConnectionProvider connectionProvider)
+        public async Task<IEnumeratorAsync<TDocument>> ExecuteAsync(IConnectionProvider connectionProvider)
         {
-            var reply = GetFirstBatch(connectionProvider);
+            var reply = await GetFirstBatchAsync(connectionProvider);
             return new CursorEnumerator<TDocument>(
                 connectionProvider,
                 CollectionFullName,
@@ -87,7 +88,7 @@ namespace MongoDB.Driver.Operations
                 _serializationOptions);
         }
 
-        private MongoReplyMessage<TDocument> GetFirstBatch(IConnectionProvider connectionProvider)
+        private async Task<MongoReplyMessage<TDocument>> GetFirstBatchAsync(IConnectionProvider connectionProvider)
         {
             // some of these weird conditions are necessary to get commands to run correctly
             // specifically numberToReturn has to be 1 or -1 for commands
@@ -109,15 +110,15 @@ namespace MongoDB.Driver.Operations
                 numberToReturn = Math.Min(_batchSize, _limit);
             }
 
-            var connection = connectionProvider.AcquireConnection();
+            var connection = await connectionProvider.AcquireConnectionAsync().ConfigureAwait(false);
             try
             {
                 var maxDocumentSize = connection.ServerInstance.MaxDocumentSize;
                 var forShardRouter = connection.ServerInstance.InstanceType == MongoServerInstanceType.ShardRouter;
                 var wrappedQuery = WrapQuery(_query, _options, _readPreference, forShardRouter);
                 var queryMessage = new MongoQueryMessage(WriterSettings, CollectionFullName, _flags, maxDocumentSize, _skip, numberToReturn, wrappedQuery, _fields);
-                connection.SendMessage(queryMessage);
-                return connection.ReceiveMessage<TDocument>(ReaderSettings, _serializer, _serializationOptions);
+                await connection.SendMessageAsync(queryMessage);
+                return await connection.ReceiveMessageAsync<TDocument>(ReaderSettings, _serializer, _serializationOptions).ConfigureAwait(false);
             }
             finally
             {

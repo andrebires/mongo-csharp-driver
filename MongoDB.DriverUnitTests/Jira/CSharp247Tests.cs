@@ -48,10 +48,10 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp247
         [Test]
         public void TestDeserializeInterface()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var c = new C { X = 1 };
-            _collection.Insert<I>(c);
+            _collection.InsertAsync<I>(c);
             var id = c.Id;
 
             var i = _collection.FindOneAs<I>();

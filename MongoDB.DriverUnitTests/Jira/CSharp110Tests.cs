@@ -37,11 +37,11 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp110
             var database = Configuration.TestDatabase;
             var collection = Configuration.GetTestCollection<C>();
 
-            collection.RemoveAll();
+            collection.RemoveAllAsync();
             var c = new C { X = 1 };
-            collection.Insert(c);
+            collection.InsertAsyncAsync(c);
             c = new C { X = 2 };
-            collection.Insert(c);
+            collection.InsertAsyncAsync(c);
 
             var query = Query.EQ("X", 2);
             foreach (var document in collection.Find(query))

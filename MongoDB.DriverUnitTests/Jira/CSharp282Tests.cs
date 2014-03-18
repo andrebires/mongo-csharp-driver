@@ -41,11 +41,11 @@ namespace MongoDB.DriverUnitTests.Jira
         public void TestEmptyUpdateBuilder()
         {
             var document = new BsonDocument("x", 1);
-            _collection.Insert(document);
+            _collection.InsertAsyncAsync(document);
 
             var query = Query.EQ("_id", document["_id"]);
             var update = new UpdateBuilder();
-            Assert.Throws<ArgumentException>(() => _collection.Update(query, update));
+            Assert.Throws<ArgumentException>(() => _collection.UpdateAsync(query, update));
         }
     }
 }

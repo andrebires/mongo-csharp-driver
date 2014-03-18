@@ -33,12 +33,12 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp199
                 var database = Configuration.TestDatabase;
                 var collection = Configuration.TestCollection;
 
-                collection.RemoveAll();
-                collection.Insert(new BsonDocument { { "_id", 1 }, { "a", 2 } });
+                collection.RemoveAllAsync();
+                collection.InsertAsyncAsync(new BsonDocument { { "_id", 1 }, { "a", 2 } });
 
                 var query = Query.EQ("_id", 1);
                 var update = Update.Rename("a", "x");
-                collection.Update(query, update);
+                collection.UpdateAsync(query, update);
                 var document = collection.FindOne();
 
                 var expectedUpdate = "{ '$rename' : { 'a' : 'x' } }".Replace("'", "\"");
@@ -58,12 +58,12 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp199
                 var database = Configuration.TestDatabase;
                 var collection = Configuration.TestCollection;
 
-                collection.RemoveAll();
-                collection.Insert(new BsonDocument { { "_id", 1 }, { "a", 2 }, { "b", 3 } });
+                collection.RemoveAllAsync();
+                collection.InsertAsyncAsync(new BsonDocument { { "_id", 1 }, { "a", 2 }, { "b", 3 } });
 
                 var query = Query.EQ("_id", 1);
                 var update = Update.Rename("a", "x").Rename("b", "y");
-                collection.Update(query, update);
+                collection.UpdateAsync(query, update);
                 var document = collection.FindOne();
 
                 var expectedUpdate = "{ '$rename' : { 'a' : 'x', 'b' : 'y' } }".Replace("'", "\"");
@@ -83,12 +83,12 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp199
                 var database = Configuration.TestDatabase;
                 var collection = Configuration.TestCollection;
 
-                collection.RemoveAll();
-                collection.Insert(new BsonDocument { { "_id", 1 }, { "a", 2 }, { "b", 3 } });
+                collection.RemoveAllAsync();
+                collection.InsertAsyncAsync(new BsonDocument { { "_id", 1 }, { "a", 2 }, { "b", 3 } });
 
                 var query = Query.EQ("_id", 1);
                 var update = Update.Rename("a", "x").Set("b", 4);
-                collection.Update(query, update);
+                collection.UpdateAsync(query, update);
                 var document = collection.FindOne();
 
                 var expectedUpdate = "{ '$rename' : { 'a' : 'x' }, '$set' : { 'b' : 4 } }".Replace("'", "\"");

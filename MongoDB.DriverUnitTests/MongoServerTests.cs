@@ -104,7 +104,7 @@ namespace MongoDB.DriverUnitTests
             {
                 _database.Drop();
                 Assert.IsFalse(_server.DatabaseExists(_database.Name));
-                _collection.Insert(new BsonDocument("x", 1));
+                _collection.InsertAsyncAsync(new BsonDocument("x", 1));
                 Assert.IsTrue(_server.DatabaseExists(_database.Name));
             }
         }
@@ -114,7 +114,7 @@ namespace MongoDB.DriverUnitTests
         {
             if (!_isMasterSlavePair)
             {
-                _collection.Insert(new BsonDocument());
+                _collection.InsertAsyncAsync(new BsonDocument());
                 var databaseNames = _server.GetDatabaseNames();
                 Assert.IsTrue(databaseNames.Contains(_database.Name));
 
@@ -128,7 +128,7 @@ namespace MongoDB.DriverUnitTests
         public void TestFetchDBRef()
         {
             _collection.Drop();
-            _collection.Insert(new BsonDocument { { "_id", 1 }, { "x", 2 } });
+            _collection.InsertAsyncAsync(new BsonDocument { { "_id", 1 }, { "x", 2 } });
             var dbRef = new MongoDBRef(_database.Name, _collection.Name, 1);
             var document = _server.FetchDBRef(dbRef);
             Assert.AreEqual(2, document.ElementCount);

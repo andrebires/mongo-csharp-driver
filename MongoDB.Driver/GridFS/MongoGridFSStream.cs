@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.GridFS
 {
@@ -76,7 +77,7 @@ namespace MongoDB.Driver.GridFS
                     }
                     else
                     {
-                        OpenCreate();
+                        OpenCreateAsync().Wait();
                     }
                     break;
                 case FileMode.Create:
@@ -86,7 +87,7 @@ namespace MongoDB.Driver.GridFS
                     }
                     else
                     {
-                        OpenCreate();
+                        OpenCreateAsync().Wait();
                     }
                     break;
                 case FileMode.CreateNew:
@@ -97,7 +98,7 @@ namespace MongoDB.Driver.GridFS
                     }
                     else
                     {
-                        OpenCreate();
+                        OpenCreateAsync().Wait();
                     }
                     break;
                 case FileMode.Open:
@@ -118,7 +119,7 @@ namespace MongoDB.Driver.GridFS
                     }
                     else
                     {
-                        OpenCreate();
+                        OpenCreateAsync().Wait();
                     }
                     break;
                 case FileMode.Truncate:
@@ -225,8 +226,18 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         public override void Flush()
         {
+            FlushAsync().Wait();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public override async Task FlushAsync(System.Threading.CancellationToken cancellationToken)
+        {
             if (_disposed) { throw new ObjectDisposedException("MongoGridFSStream"); }
-            if (_chunkIsDirty) { SaveChunk(); }
+            if (_chunkIsDirty) { await SaveChunkAsync().ConfigureAwait(false); }
         }
 
         /// <summary>
@@ -238,6 +249,18 @@ namespace MongoDB.Driver.GridFS
         /// <returns>The number of bytes read.</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
+            return ReadAsync(buffer, offset, count).Result;
+        }
+
+        /// <summary>
+        /// Reads bytes from the GridFS stream.
+        /// </summary>
+        /// <param name="buffer">The destination buffer.</param>
+        /// <param name="offset">The offset in the destination buffer at which to place the read bytes.</param>
+        /// <param name="count">The number of bytes to read.</param>
+        /// <returns>The number of bytes read.</returns>
+        public new async Task<int> ReadAsync(byte[] buffer, int offset, int count)
+        {
             if (_disposed) { throw new ObjectDisposedException("MongoGridFSStream"); }
             var available = _length - _position;
             if (count > available) { count = (int)available; }
@@ -246,7 +269,7 @@ namespace MongoDB.Driver.GridFS
             var bytesRead = 0;
             while (count > 0)
             {
-                if (_chunkIndex != chunkIndex) { LoadChunk(chunkIndex); }
+                if (_chunkIndex != chunkIndex) { await LoadChunkAsync(chunkIndex).ConfigureAwait(false); }
                 var partialCount = _fileInfo.ChunkSize - chunkOffset;
                 if (partialCount > count) { partialCount = count; }
                 Buffer.BlockCopy(_chunk, chunkOffset, buffer, offset, partialCount);
@@ -257,6 +280,7 @@ namespace MongoDB.Driver.GridFS
                 count -= partialCount;
                 bytesRead += partialCount;
             }
+
             return bytesRead;
         }
 
@@ -266,12 +290,21 @@ namespace MongoDB.Driver.GridFS
         /// <returns>The byte (-1 if at the end of the GridFS stream).</returns>
         public override int ReadByte()
         {
+            return ReadByteAsync().Result;
+        }
+
+        /// <summary>
+        /// Reads one byte from the GridFS stream.
+        /// </summary>
+        /// <returns>The byte (-1 if at the end of the GridFS stream).</returns>
+        public async Task<int> ReadByteAsync()
+        {
             if (_disposed) { throw new ObjectDisposedException("MongoGridFSStream"); }
             if (_position < _length)
             {
                 var chunkIndex = _position / _fileInfo.ChunkSize;
                 var chunkOffset = (int)(_position % _fileInfo.ChunkSize);
-                if (_chunkIndex != chunkIndex) { LoadChunk(chunkIndex); }
+                if (_chunkIndex != chunkIndex) { await LoadChunkAsync(chunkIndex).ConfigureAwait(false); }
                 var b = _chunk[chunkOffset];
                 _position += 1;
                 return b;
@@ -344,6 +377,17 @@ namespace MongoDB.Driver.GridFS
         /// <param name="count">The number of bytes to write.</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
+            WriteAsync(buffer, offset, count).Wait();
+        }
+
+        /// <summary>
+        /// Writes bytes to the GridFS stream.
+        /// </summary>
+        /// <param name="buffer">The source buffer.</param>
+        /// <param name="offset">The offset in the source buffer to the bytes.</param>
+        /// <param name="count">The number of bytes to write.</param>
+        public new async Task WriteAsync(byte[] buffer, int offset, int count)
+        {
             if (_disposed) { throw new ObjectDisposedException("MongoGridFSStream"); }
             var chunkIndex = _position / _fileInfo.ChunkSize;
             var chunkOffset = (int)(_position % _fileInfo.ChunkSize);
@@ -353,11 +397,11 @@ namespace MongoDB.Driver.GridFS
                 {
                     if (chunkOffset == 0 && count >= _fileInfo.ChunkSize)
                     {
-                        LoadChunkNoData(chunkIndex); // don't need the data because we're going to overwrite all of it
+                        await LoadChunkNoDataAsync(chunkIndex).ConfigureAwait(false); // don't need the data because we're going to overwrite all of it
                     }
                     else
                     {
-                        LoadChunk(chunkIndex);
+                        await LoadChunkAsync(chunkIndex).ConfigureAwait(false);
                     }
                 }
 
@@ -377,7 +421,7 @@ namespace MongoDB.Driver.GridFS
                 count -= partialCount;
                 if (count > 0)
                 {
-                    SaveChunk();
+                    await SaveChunkAsync().ConfigureAwait(false);
                     chunkIndex += 1;
                     chunkOffset = 0;
                 }
@@ -390,12 +434,21 @@ namespace MongoDB.Driver.GridFS
         /// <param name="value">The byte.</param>
         public override void WriteByte(byte value)
         {
+            WriteByteAsync(value).Wait();
+        }
+
+        /// <summary>
+        /// Writes one byte to the GridFS stream.
+        /// </summary>
+        /// <param name="value">The byte.</param>
+        public async Task WriteByteAsync(byte value)
+        {
             if (_disposed) { throw new ObjectDisposedException("MongoGridFSStream"); }
             var chunkIndex = _position / _fileInfo.ChunkSize;
             var chunkOffset = (int)(_position % _fileInfo.ChunkSize);
             if (_chunkIndex != chunkIndex)
             {
-                LoadChunk(chunkIndex);
+                await LoadChunkAsync(chunkIndex).ConfigureAwait(false);
             }
             _chunk[chunkOffset] = value;
             _chunkIsDirty = true;
@@ -406,6 +459,7 @@ namespace MongoDB.Driver.GridFS
                 _length = _position; // direct assignment is OK here instead of calling SetLength
             }
         }
+        
 
         // protected methods
         /// <summary>
@@ -423,8 +477,8 @@ namespace MongoDB.Driver.GridFS
                         if (_fileIsDirty)
                         {
                             Flush();
-                            AddMissingChunks(); // also removes extra chunks
-                            UpdateMetadata();
+                            AddMissingChunksAsync().Wait(); // also removes extra chunks
+                            UpdateMetadataAsync().Wait();
                         }
                     }
                     _disposed = true;
@@ -437,7 +491,7 @@ namespace MongoDB.Driver.GridFS
         }
 
         // private methods
-        private void AddMissingChunks()
+        private async Task AddMissingChunksAsync()
         {
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
             {
@@ -463,7 +517,7 @@ namespace MongoDB.Driver.GridFS
                 if (foundExtraChunks)
                 {
                     var extraChunksQuery = Query.And(Query.EQ("files_id", _fileInfo.Id), Query.GTE("n", chunkCount));
-                    chunksCollection.Remove(extraChunksQuery);
+                    await chunksCollection.RemoveAsync(extraChunksQuery);
                 }
 
                 BsonBinaryData zeros = null; // delay creating it until it's actually needed
@@ -482,7 +536,7 @@ namespace MongoDB.Driver.GridFS
                         { "n", (n < int.MaxValue) ? (BsonValue)new BsonInt32((int)n) : new BsonInt64(n) },
                         { "data", zeros }
                     };
-                        chunksCollection.Insert(missingChunk);
+                        await chunksCollection.InsertAsync(missingChunk);
                     }
                 }
             }
@@ -498,9 +552,9 @@ namespace MongoDB.Driver.GridFS
             }
         }
 
-        private void LoadChunk(long chunkIndex)
+        private async Task LoadChunkAsync(long chunkIndex)
         {
-            if (_chunkIsDirty) { SaveChunk(); }
+            if (_chunkIsDirty) { await SaveChunkAsync(); }
 
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
             {
@@ -509,7 +563,7 @@ namespace MongoDB.Driver.GridFS
                 var chunksCollection = gridFS.GetChunksCollection(database);
 
                 var query = Query.And(Query.EQ("files_id", _fileInfo.Id), Query.EQ("n", chunkIndex));
-                var document = chunksCollection.FindOne(query);
+                var document = await chunksCollection.FindOneAsync(query).ConfigureAwait(false);
                 if (document == null)
                 {
                     if (_chunk == null)
@@ -544,9 +598,9 @@ namespace MongoDB.Driver.GridFS
             }
         }
 
-        private void LoadChunkNoData(long chunkIndex)
+        private async Task LoadChunkNoDataAsync(long chunkIndex)
         {
-            if (_chunkIsDirty) { SaveChunk(); }
+            if (_chunkIsDirty) { await SaveChunkAsync(); }
 
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
             {
@@ -584,14 +638,14 @@ namespace MongoDB.Driver.GridFS
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
             {
                 var gridFS = new MongoGridFS(_fileInfo.Server, _fileInfo.DatabaseName, _fileInfo.GridFSSettings);
-                gridFS.EnsureIndexes();
+                gridFS.EnsureIndexesAsync();
 
                 _length = _fileInfo.Length;
                 _position = _fileInfo.Length;
             }
         }
 
-        private void OpenCreate()
+        private async Task OpenCreateAsync()
         {
             EnsureServerInstanceIsPrimary();
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
@@ -600,7 +654,7 @@ namespace MongoDB.Driver.GridFS
                 var database = gridFS.GetDatabase(ReadPreference.Primary);
                 var filesCollection = gridFS.GetFilesCollection(database);
 
-                gridFS.EnsureIndexes();
+                await gridFS.EnsureIndexesAsync();
 
                 _fileIsDirty = true;
                 if (_fileInfo.Id == null)
@@ -621,7 +675,7 @@ namespace MongoDB.Driver.GridFS
                     { "aliases", aliases, aliases != null }, // optional
                     { "metadata", _fileInfo.Metadata, _fileInfo.Metadata != null } // optional
                 };
-                filesCollection.Insert(file);
+                await filesCollection.InsertAsync(file);
 
                 _length = 0;
                 _position = 0;
@@ -640,7 +694,7 @@ namespace MongoDB.Driver.GridFS
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
             {
                 var gridFS = new MongoGridFS(_fileInfo.Server, _fileInfo.DatabaseName, _fileInfo.GridFSSettings);
-                gridFS.EnsureIndexes();
+                gridFS.EnsureIndexesAsync();
 
                 _fileIsDirty = true;
                 // existing chunks will be overwritten as needed and extra chunks will be removed on Close
@@ -649,7 +703,7 @@ namespace MongoDB.Driver.GridFS
             }
         }
 
-        private void SaveChunk()
+        private async Task SaveChunkAsync()
         {
             using (_fileInfo.Server.RequestStart(null, _fileInfo.ServerInstance))
             {
@@ -690,14 +744,14 @@ namespace MongoDB.Driver.GridFS
                     { "n", (_chunkIndex < int.MaxValue) ? (BsonValue)new BsonInt32((int)_chunkIndex) : new BsonInt64(_chunkIndex) },
                     { "data", data }
                 };
-                chunksCollection.Update(query, update, UpdateFlags.Upsert);
+                await chunksCollection.UpdateAsync(query, update, UpdateFlags.Upsert);
                 _chunkIsDirty = false;
             }
         }
 
-        private void UpdateMetadata()
+        private async Task UpdateMetadataAsync()
         {
-            using (_fileInfo.Server.RequestStart(null, ReadPreference.Primary))
+            using (await _fileInfo.Server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var gridFS = new MongoGridFS(_fileInfo.Server, _fileInfo.DatabaseName, _fileInfo.GridFSSettings);
                 var database = gridFS.GetDatabase(ReadPreference.Primary);
@@ -711,7 +765,7 @@ namespace MongoDB.Driver.GridFS
                     { "filemd5", _fileInfo.Id },
                     { "root", gridFS.Settings.Root }
                 };
-                    var md5Result = database.RunCommand(md5Command);
+                    var md5Result = await database.RunCommandAsync(md5Command);
                     md5 = md5Result.Response["md5"].AsString;
                 }
 
@@ -720,7 +774,7 @@ namespace MongoDB.Driver.GridFS
                     .Set("length", _length)
                     .Set("md5", md5);
 
-                filesCollection.Update(query, update);
+                await filesCollection.UpdateAsync(query, update);
             }
         }
     }

@@ -73,13 +73,13 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentNoId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new BsonDocument
             {
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonObjectId>(document["_id"]);
@@ -88,7 +88,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
 
             var id = document["_id"].AsObjectId;
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsObjectId);
             Assert.AreEqual(1, _collection.Count());
 
@@ -101,18 +101,18 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentBsonNullId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new BsonDocument
             {
                 { "_id", BsonNull.Value },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(1, _collection.Count());
 
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(1, _collection.Count());
 
             document = _collection.FindOneAs<BsonDocument>();
@@ -124,14 +124,14 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentEmptyObjectId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new BsonDocument
             {
                 { "_id", ObjectId.Empty },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonObjectId>(document["_id"]);
@@ -140,7 +140,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
 
             var id = document["_id"].AsObjectId;
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsObjectId);
             Assert.AreEqual(1, _collection.Count());
 
@@ -153,7 +153,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentGeneratedObjectId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = ObjectId.GenerateNewId();
             var document = new BsonDocument
@@ -161,7 +161,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
                 { "_id", id },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonObjectId>(document["_id"]);
@@ -169,7 +169,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
             Assert.AreEqual(1, _collection.Count());
 
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsObjectId);
             Assert.AreEqual(1, _collection.Count());
 
@@ -182,14 +182,14 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentEmptyGuid()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new BsonDocument
             {
                 { "_id", Guid.Empty },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonBinaryData>(document["_id"]);
@@ -198,7 +198,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
 
             var id = document["_id"].AsGuid;
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsGuid);
             Assert.AreEqual(1, _collection.Count());
 
@@ -211,7 +211,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentGeneratedGuid()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var guid = Guid.NewGuid();
             var document = new BsonDocument
@@ -219,7 +219,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
                 { "_id", guid },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonBinaryData>(document["_id"]);
@@ -228,7 +228,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
 
             var id = document["_id"].AsGuid;
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsGuid);
             Assert.AreEqual(1, _collection.Count());
 
@@ -241,7 +241,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentInt32Id()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = 123;
             var document = new BsonDocument
@@ -249,7 +249,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
                 { "_id", id },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonInt32>(document["_id"]);
@@ -257,7 +257,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
             Assert.AreEqual(1, _collection.Count());
 
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsInt32);
             Assert.AreEqual(1, _collection.Count());
 
@@ -270,7 +270,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentInt64Id()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = 123L;
             var document = new BsonDocument
@@ -278,7 +278,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
                 { "_id", id },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonInt64>(document["_id"]);
@@ -286,7 +286,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
             Assert.AreEqual(1, _collection.Count());
 
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsInt64);
             Assert.AreEqual(1, _collection.Count());
 
@@ -299,7 +299,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestBsonDocumentStringId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = "123";
             var document = new BsonDocument
@@ -307,7 +307,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
                 { "_id", id },
                 { "A", 1 }
             };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(2, document.ElementCount);
             Assert.AreEqual("_id", document.GetElement(0).Name);
             Assert.IsInstanceOf<BsonString>(document["_id"]);
@@ -315,7 +315,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
             Assert.AreEqual(1, _collection.Count());
 
             document["A"] = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document["_id"].AsString);
             Assert.AreEqual(1, _collection.Count());
 
@@ -328,26 +328,26 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCNoId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new CNoId { A = 1 };
-            Assert.Throws<InvalidOperationException>(() => _collection.Save(document));
+            Assert.Throws<InvalidOperationException>(() => _collection.SaveAsyncAsyncAsync(document));
         }
 
         [Test]
         public void TestCObjectIdEmpty()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new CObjectId { A = 1 };
             Assert.AreEqual(ObjectId.Empty, document.Id);
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreNotEqual(ObjectId.Empty, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
             var id = document.Id;
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
@@ -359,16 +359,16 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCObjectIdGenerated()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = ObjectId.GenerateNewId();
             var document = new CObjectId { Id = id, A = 1 };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
@@ -380,17 +380,17 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCGuidEmpty()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new CGuid { A = 1 };
             Assert.AreEqual(Guid.Empty, document.Id);
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreNotEqual(Guid.Empty, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
             var id = document.Id;
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
@@ -402,16 +402,16 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCGuidGenerated()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = Guid.NewGuid();
             var document = new CGuid { Id = id, A = 1 };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
@@ -423,16 +423,16 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCInt32Id()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = 123;
             var document = new CInt32Id { Id = id, A = 1 };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
@@ -444,16 +444,16 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCInt64Id()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var id = 123L;
             var document = new CInt64Id { Id = id, A = 1 };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(id, document.Id);
             Assert.AreEqual(1, _collection.Count());
 
@@ -465,13 +465,13 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
         [Test]
         public void TestCStringId()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var document = new CStringId { Id = null, A = 1 };
-            Assert.Throws<InvalidOperationException>(() => _collection.Save(document)); // Id is null
+            Assert.Throws<InvalidOperationException>(() => _collection.SaveAsyncAsyncAsync(document)); // Id is null
 
             document = new CStringId { Id = "123", A = 1 };
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(1, _collection.Count());
 
             document = _collection.FindOneAs<CStringId>();
@@ -479,7 +479,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp101
             Assert.AreEqual(1, document.A);
 
             document.A = 2;
-            _collection.Save(document);
+            _collection.SaveAsyncAsyncAsync(document);
             Assert.AreEqual(1, _collection.Count());
 
             document = _collection.FindOneAs<CStringId>();

@@ -33,7 +33,7 @@ namespace MongoDB.DriverUnitTests.Jira
             collection.Drop();
             var document = new BsonDocument { { "_id", 1 }, { "", 2 } };
             var insertOptions = new MongoInsertOptions { CheckElementNames = false };
-            collection.Insert(document, insertOptions);
+            collection.InsertAsyncAsync(document, insertOptions);
             var rehydrated = collection.FindOne();
             Assert.AreEqual(2, rehydrated.ElementCount);
             Assert.AreEqual(1, rehydrated["_id"].AsInt32);
@@ -46,7 +46,7 @@ namespace MongoDB.DriverUnitTests.Jira
             var collection = Configuration.GetTestCollection<BsonDocument>();
             collection.Drop();
             var document = new BsonDocument { { "_id", 1 }, { "", 2 } };
-            Assert.Throws<BsonSerializationException>(() => collection.Insert(document));
+            Assert.Throws<BsonSerializationException>(() => collection.InsertAsyncAsync(document));
         }
     }
 
@@ -59,7 +59,7 @@ namespace MongoDB.DriverUnitTests.Jira
 
             var collection = Configuration.GetTestCollection<C>();
             collection.Drop();
-            collection.Insert(c);
+            collection.InsertAsyncAsync(c);
             return collection.FindOne();
         }
     }

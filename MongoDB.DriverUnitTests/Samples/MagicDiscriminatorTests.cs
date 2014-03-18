@@ -105,8 +105,8 @@ namespace MongoDB.DriverUnitTests.Samples
             var expected = "{ 'InA' : 'a', 'OnlyInB' : 'b' }".Replace("'", "\""); // note: no _t discriminator!
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(b);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(b);
             var copy = (B)_collection.FindOne();
             Assert.IsInstanceOf<B>(copy);
             Assert.AreEqual("a", copy.InA);
@@ -122,8 +122,8 @@ namespace MongoDB.DriverUnitTests.Samples
             var expected = "{ 'InA' : 'a', 'OnlyInC' : 'c' }".Replace("'", "\""); // note: no _t discriminator!
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(c);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(c);
             var copy = (C)_collection.FindOne();
             Assert.IsInstanceOf<C>(copy);
             Assert.AreEqual("a", copy.InA);

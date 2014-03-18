@@ -21,6 +21,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -36,7 +37,7 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public IEnumerable<WriteConcernResult> Execute(MongoConnection connection)
+        public async Task<IEnumerable<WriteConcernResult>> ExecuteAsync(MongoConnection connection)
         {
             var serverInstance = connection.ServerInstance;
             if (!serverInstance.Supports(FeatureId.WriteCommands))
@@ -50,7 +51,7 @@ namespace MongoDB.Driver.Operations
             BulkWriteException bulkWriteException = null;
             try
             {
-                bulkWriteResult = operation.Execute(connection);
+                bulkWriteResult = await operation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             catch (BulkWriteException ex)
             {

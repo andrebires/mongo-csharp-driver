@@ -24,6 +24,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Communication.FeatureDetection;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -382,12 +383,12 @@ namespace MongoDB.Driver
         /// <summary>
         /// Checks whether the server is alive (throws an exception if not).
         /// </summary>
-        public void Ping()
+        public async Task PingAsync()
         {
             var connection = _connectionPool.AcquireConnection(_stateVerificationAcquireConnectionOptions);
             try
             {
-                Ping(connection);
+                await PingAsync(connection);
             }
             finally
             {
@@ -424,15 +425,15 @@ namespace MongoDB.Driver
         /// <summary>
         /// Verifies the state of the server instance.
         /// </summary>
-        public void VerifyState()
+        public async Task VerifyStateAsync()
         {
             var connection = _connectionPool.AcquireConnection(_stateVerificationAcquireConnectionOptions);
             try
             {
                 try
                 {
-                    Ping(connection);
-                    LookupServerInformation(connection);
+                    await PingAsync(connection);
+                    await LookupServerInformationAsync(connection);
                 }
                 catch
                 {
@@ -468,7 +469,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Connects this instance.
         /// </summary>
-        internal void Connect()
+        internal async Task ConnectAsync()
         {
             // Console.WriteLine("MongoServerInstance[{0}]: Connect() called.", sequentialId);
             lock (_serverInstanceLock)
@@ -493,8 +494,8 @@ namespace MongoDB.Driver
                 var connection = _connectionPool.AcquireConnection();
                 try
                 {
-                    Ping(connection);
-                    LookupServerInformation(connection);
+                    await PingAsync(connection);
+                    await LookupServerInformationAsync(connection);
                 }
                 finally
                 {
@@ -519,7 +520,8 @@ namespace MongoDB.Driver
                 {
                     if (_stateVerificationTimer == null)
                     {
-                        _stateVerificationTimer = new Timer(o => StateVerificationTimerCallback(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+                        // TODO: Change the timer ?
+                        _stateVerificationTimer = new Timer(o => StateVerificationTimerCallbackAsync().Wait(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
                     }
                 }
             }
@@ -627,20 +629,20 @@ namespace MongoDB.Driver
         }
 
         // private methods
-        private void LookupServerInformation(MongoConnection connection)
+        private async Task LookupServerInformationAsync(MongoConnection connection)
         {
             IsMasterResult isMasterResult = null;
             bool ok = false;
             try
             {
                 var isMasterCommand = new CommandDocument("ismaster", 1);
-                isMasterResult = RunCommandAs<IsMasterResult>(connection, "admin", isMasterCommand);
+                isMasterResult = await RunCommandAsAsync<IsMasterResult>(connection, "admin", isMasterCommand);
 
                 MongoServerBuildInfo buildInfo;
                 try
                 {
                     var buildInfoCommand = new CommandDocument("buildinfo", 1);
-                    var buildInfoResult = RunCommandAs<CommandResult>(connection, "admin", buildInfoCommand);
+                    var buildInfoResult = await RunCommandAsAsync<CommandResult>(connection, "admin", buildInfoCommand);
                     buildInfo = MongoServerBuildInfo.FromCommandResult(buildInfoResult);
                 }
                 catch (MongoCommandException ex)
@@ -749,13 +751,13 @@ namespace MongoDB.Driver
             }
         }
 
-        private void Ping(MongoConnection connection)
+        private async Task PingAsync(MongoConnection connection)
         {
             try
             {
                 var pingCommand = new CommandDocument("ping", 1);
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                RunCommandAs<CommandResult>(connection, "admin", pingCommand);
+                await RunCommandAsAsync<CommandResult>(connection, "admin", pingCommand);
                 stopwatch.Stop();
                 var currentAverage = _pingTimeAggregator.Average;
                 _pingTimeAggregator.Include(stopwatch.Elapsed);
@@ -774,7 +776,7 @@ namespace MongoDB.Driver
             }
         }
 
-        private TCommandResult RunCommandAs<TCommandResult>(MongoConnection connection, string databaseName, IMongoCommand command)
+        private Task<TCommandResult> RunCommandAsAsync<TCommandResult>(MongoConnection connection, string databaseName, IMongoCommand command)
             where TCommandResult : CommandResult
         {
             var readerSettings = new BsonBinaryReaderSettings();
@@ -792,10 +794,10 @@ namespace MongoDB.Driver
                 null, // serializationOptions
                 resultSerializer);
 
-            return commandOperation.Execute(connection);
+            return commandOperation.ExecuteAsync(connection);
         }
 
-        private void StateVerificationTimerCallback()
+        private async Task StateVerificationTimerCallbackAsync()
         {
             if (_inStateVerification)
             {
@@ -808,8 +810,8 @@ namespace MongoDB.Driver
                 var connection = _connectionPool.AcquireConnection(_stateVerificationAcquireConnectionOptions);
                 try
                 {
-                    Ping(connection);
-                    LookupServerInformation(connection);
+                    await PingAsync(connection);
+                    await LookupServerInformationAsync(connection);
                     ThreadPool.QueueUserWorkItem(o => _connectionPool.MaintainPoolSize());
                     SetState(MongoServerState.Connected);
                 }

@@ -87,8 +87,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -103,8 +103,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -119,7 +119,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(d); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsyncAsync(d); });
         }
 
         [Test]
@@ -130,7 +130,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(d); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsyncAsync(d); });
         }
 
         [Test]
@@ -141,8 +141,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -157,8 +157,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -173,8 +173,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -189,8 +189,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -205,8 +205,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -221,7 +221,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(d); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsyncAsync(d); });
         }
 
         [Test]
@@ -232,7 +232,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(d); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsyncAsync(d); });
         }
 
         [Test]
@@ -243,8 +243,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -259,8 +259,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);
@@ -275,8 +275,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp265
             var json = d.ToJson();
             Assert.AreEqual(expected, json);
 
-            _collection.RemoveAll();
-            _collection.Insert(d);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(d);
             var r = _collection.FindOne(Query.EQ("_id", d.Id));
             Assert.AreEqual(d.Id, r.Id);
             Assert.AreEqual(1, r.Data.Count);

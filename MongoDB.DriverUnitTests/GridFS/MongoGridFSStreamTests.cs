@@ -45,8 +45,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestCreateZeroLengthFile()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var fileInfo = _gridFS.FindOne("test");
             Assert.IsNull(fileInfo);
@@ -80,8 +80,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestCreate1ByteFile()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var fileInfo = _gridFS.FindOne("test");
             Assert.IsNull(fileInfo);
@@ -108,8 +108,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestCreate3ChunkFile()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var fileInfo = _gridFS.FindOne("test");
             Assert.IsNull(fileInfo);
@@ -141,8 +141,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestCreate3ChunkFile1ByteAtATime()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var fileInfo = _gridFS.FindOne("test");
             Assert.IsNull(fileInfo);
@@ -177,8 +177,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestCreate3ChunkFile14BytesAtATime()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var fileInfo = _gridFS.FindOne("test");
             Assert.IsNull(fileInfo);
@@ -217,8 +217,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestOpenCreateWithId()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var createOptions = new MongoGridFSCreateOptions
             {
@@ -237,8 +237,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestOpenCreateWithMetadata()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var metadata = new BsonDocument("author", "John Doe");
             var createOptions = new MongoGridFSCreateOptions
@@ -258,8 +258,8 @@ namespace MongoDB.DriverUnitTests.GridFS
         [Test]
         public void TestUpdateMD5()
         {
-            _gridFS.Files.RemoveAll();
-            _gridFS.Chunks.RemoveAll();
+            _gridFS.Files.RemoveAllAsync();
+            _gridFS.Chunks.RemoveAllAsync();
 
             var fileInfo = _gridFS.FindOne("test");
             Assert.IsNull(fileInfo);

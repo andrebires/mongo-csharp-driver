@@ -35,8 +35,8 @@ namespace MongoDB.DriverUnitTests.Jira
         [Test]
         public void GenerateIdCalledFromInsert()
         {
-            _collection.RemoveAll();
-            _collection.Insert(new C());
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(new C());
             var c = _collection.FindOne();
             Assert.AreEqual(1, c.Id);
         }
@@ -44,8 +44,8 @@ namespace MongoDB.DriverUnitTests.Jira
         [Test]
         public void GenerateIdCalledFromSave()
         {
-            _collection.RemoveAll();
-            _collection.Save(new C());
+            _collection.RemoveAllAsync();
+            _collection.SaveAsyncAsyncAsync(new C());
             var c = _collection.FindOne();
             Assert.AreEqual(1, c.Id);
         }

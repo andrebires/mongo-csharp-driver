@@ -20,6 +20,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -60,7 +61,7 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public ReadOnlyCollection<IEnumerator<TDocument>> Execute(MongoConnection connection)
+        public async Task<ReadOnlyCollection<IEnumerator<TDocument>>> ExecuteAsync(MongoConnection connection)
         {
             var command = new CommandDocument
             {
@@ -81,7 +82,7 @@ namespace MongoDB.Driver.Operations
                 null, // serializationOptions
                 commandResultSerializer);
 
-            var result = operation.Execute(connection);
+            var result = await operation.ExecuteAsync(connection).ConfigureAwait(false);
             var response = result.Response;
 
             var connectionProvider = new ServerInstanceConnectionProvider(result.ServerInstance);

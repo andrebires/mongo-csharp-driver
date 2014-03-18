@@ -20,10 +20,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
-    internal class AggregateEnumerableResult : IEnumerable<BsonDocument>
+    internal class AggregateEnumerableResult : IEnumerableAsync<BsonDocument>
     {
         // private fields
         private readonly MongoCollection _collection;
@@ -40,19 +41,24 @@ namespace MongoDB.Driver
             _args = args; // TODO: make a defensive copy?
             _outputCollectionName = outputCollectionName;
         }
+        
+        public IEnumerator<BsonDocument> GetEnumerator()
+        {
+            return GetEnumeratorAsync().Result;
+        }
 
         // public methods
-        public IEnumerator<BsonDocument> GetEnumerator()
+        public async Task<IEnumeratorAsync<BsonDocument>> GetEnumeratorAsync()
         {
             if (_outputCollectionName != null)
             {
                 var database = _collection.Database;
                 var collectionSettings = new MongoCollectionSettings { ReadPreference = ReadPreference.Primary };
                 var collection = database.GetCollection<BsonDocument>(_outputCollectionName, collectionSettings);
-                return collection.FindAll().GetEnumerator();
+                return await collection.FindAll().GetEnumeratorAsync().ConfigureAwait(false);
             }
 
-            var result = _collection.RunAggregateCommand(_args);
+            var result = await _collection.RunAggregateCommandAsync(_args).ConfigureAwait(false);
             if (result.CursorId != 0)
             {
                 var connectionProvider = new ServerInstanceConnectionProvider(result.ServerInstance);
@@ -73,8 +79,8 @@ namespace MongoDB.Driver
                     null);
             }
             else if (result.ResultDocuments != null)
-            {
-                return result.ResultDocuments.GetEnumerator();
+            {                
+                return new EnumeratorAsyncWrapper<BsonDocument>(result.ResultDocuments.GetEnumerator());
             }
             else
             {

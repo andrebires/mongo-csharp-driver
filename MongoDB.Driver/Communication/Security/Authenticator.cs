@@ -21,6 +21,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Communication.Security.Mechanisms;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Communication.Security
 {
@@ -59,30 +60,30 @@ namespace MongoDB.Driver.Communication.Security
         /// <summary>
         /// Authenticates the specified connection.
         /// </summary>
-        public void Authenticate()
+        public async Task AuthenticateAsync()
         {
             if (!_credentials.Any())
             {
                 return;
             }
 
-            if (!IsArbiter())
+            if (!await IsArbiterAsync().ConfigureAwait(false))
             {
                 foreach (var credential in _credentials)
                 {
-                    Authenticate(credential);
+                    await AuthenticateAsync(credential).ConfigureAwait(false);
                 }
             }
         }
 
         // private methods
-        private void Authenticate(MongoCredential credential)
+        private async Task AuthenticateAsync(MongoCredential credential)
         {
             foreach (var clientSupportedProtocol in __clientSupportedProtocols)
             {
                 if (clientSupportedProtocol.CanUse(credential))
                 {
-                    clientSupportedProtocol.Authenticate(_connection, credential);
+                    await clientSupportedProtocol.AuthenticateAsync(_connection, credential).ConfigureAwait(false);
                     return;
                 }
             }
@@ -91,14 +92,14 @@ namespace MongoDB.Driver.Communication.Security
             throw new MongoSecurityException(message);
         }
 
-        private bool IsArbiter()
+        private async Task<bool> IsArbiterAsync()
         {
             var command = new CommandDocument("isMaster", true);
-            var result = RunCommand(_connection, "admin", command);
+            var result = await RunCommandAsync(_connection, "admin", command).ConfigureAwait(false);
             return result.Response.GetValue("arbiterOnly", false).ToBoolean();
         }
 
-        private CommandResult RunCommand(MongoConnection connection, string databaseName, IMongoCommand command)
+        private Task<CommandResult> RunCommandAsync(MongoConnection connection, string databaseName, IMongoCommand command)
         {
             var readerSettings = new BsonBinaryReaderSettings();
             var writerSettings = new BsonBinaryWriterSettings();
@@ -115,7 +116,7 @@ namespace MongoDB.Driver.Communication.Security
                 null, // serializationOptions
                 resultSerializer);
 
-            return commandOperation.Execute(connection);
+            return commandOperation.ExecuteAsync(connection);
         }
     }
 }

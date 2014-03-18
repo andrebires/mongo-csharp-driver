@@ -130,14 +130,14 @@ namespace MongoDB.DriverUnitTests.Builders
                 {
                     var collection = Configuration.TestDatabase.GetCollection<TestClass>("test_meta_text");
                     collection.Drop();
-                    collection.CreateIndex(IndexKeys<TestClass>.Text(x => x.textfield));
-                    collection.Insert(new TestClass
+                    collection.CreateIndexAsyncAsync(IndexKeys<TestClass>.Text(x => x.textfield));
+                    collection.InsertAsyncAsync(new TestClass
                     {
                         _id = 1,
                         textfield = "The quick brown fox jumped",
                         x = 1
                     });
-                    collection.Insert(new TestClass
+                    collection.InsertAsyncAsync(new TestClass
                     {
                         _id = 2,
                         textfield = "over the lazy brown dog",

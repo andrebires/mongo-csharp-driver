@@ -77,7 +77,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp653
             for (int i = 0; i < 100; ++i)
             {
                 var e = new Entity() { Name = "Name_" + i };
-                collection.Insert(e.GetType(), e, WriteConcern.Acknowledged);
+                collection.InsertAsyncAsync(e.GetType(), e, WriteConcern.Acknowledged);
             }
 
             var query = (from e in collection.AsQueryable<Entity>()

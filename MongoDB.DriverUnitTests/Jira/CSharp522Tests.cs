@@ -43,10 +43,10 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp522
         [Test]
         public void Test()
         {
-            _collection.RemoveAll();
-            _collection.Insert(new C { Id = 1, X = 1, Y = 2 });
-            _collection.Insert(new C { Id = 2, X = 1, Y = 2 });
-            _collection.Insert(new C { Id = 3, X = 2, Y = 3 });
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(new C { Id = 1, X = 1, Y = 2 });
+            _collection.InsertAsyncAsync(new C { Id = 2, X = 1, Y = 2 });
+            _collection.InsertAsyncAsync(new C { Id = 3, X = 2, Y = 3 });
 
             var query = _collection.AsQueryable()
                 .Select(d => new { d.X, d.Y })

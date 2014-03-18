@@ -788,13 +788,13 @@ namespace MongoDB.DriverUnitTests.Builders
                 {
                     var collection = _database.GetCollection<BsonDocument>("test_text");
                     collection.Drop();
-                    collection.CreateIndex(IndexKeys.Text("textfield"));
-                    collection.Insert(new BsonDocument
+                    collection.CreateIndexAsyncAsync(IndexKeys.Text("textfield"));
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 1 },
                         { "textfield", "The quick brown fox" }
                     });
-                    collection.Insert(new BsonDocument
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 2 },
                         { "textfield", "over the lazy brown dog" }
@@ -816,13 +816,13 @@ namespace MongoDB.DriverUnitTests.Builders
                 {
                     var collection = _database.GetCollection<BsonDocument>("test_text_spanish");
                     collection.Drop();
-                    collection.CreateIndex(IndexKeys.Text("textfield"), IndexOptions.SetTextDefaultLanguage("spanish"));
-                    collection.Insert(new BsonDocument
+                    collection.CreateIndexAsyncAsync(IndexKeys.Text("textfield"), IndexOptions.SetTextDefaultLanguage("spanish"));
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 1 },
                         { "textfield", "este es mi tercer blog stemmed" }
                     });
-                    collection.Insert(new BsonDocument
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 2 },
                         { "textfield", "This stemmed blog is in english" },

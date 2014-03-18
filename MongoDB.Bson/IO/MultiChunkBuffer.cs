@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -594,7 +595,7 @@ namespace MongoDB.Bson.IO
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <exception cref="System.ObjectDisposedException">MultiChunkBuffer</exception>
-        public void WriteTo(Stream stream)
+        public async Task WriteToAsync(Stream stream)
         {
             ThrowIfDisposed();
 
@@ -605,7 +606,7 @@ namespace MongoDB.Bson.IO
             {
                 var chunkRemaining = _chunkSize - chunkOffset;
                 var bytesToWrite = (remaining < chunkRemaining) ? remaining : chunkRemaining;
-                stream.Write(_chunks[chunkIndex].Bytes, chunkOffset, bytesToWrite);
+                await stream.WriteAsync(_chunks[chunkIndex].Bytes, chunkOffset, bytesToWrite);
                 chunkIndex += 1;
                 chunkOffset = 0;
                 remaining -= bytesToWrite;
@@ -720,5 +721,6 @@ namespace MongoDB.Bson.IO
                 _position = targetCapacity;
             }
         }
+
     }
 }

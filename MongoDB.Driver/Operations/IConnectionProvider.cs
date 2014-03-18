@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -26,7 +27,7 @@ namespace MongoDB.Driver.Operations
         /// Acquires a connection.
         /// </summary>
         /// <returns>A connection.</returns>
-        MongoConnection AcquireConnection();
+        Task<MongoConnection> AcquireConnectionAsync();
 
         /// <summary>
         /// Releases a connection.

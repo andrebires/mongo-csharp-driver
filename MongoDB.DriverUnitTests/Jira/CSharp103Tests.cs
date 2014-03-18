@@ -27,12 +27,12 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp103
             var server = Configuration.TestServer;
             var database = Configuration.TestDatabase;
             var collection = Configuration.TestCollection;
-            collection.RemoveAll();
+            collection.RemoveAllAsync();
             using (database.RequestStart())
             {
                 for (int i = 0; i < 1; i++)
                 {
-                    collection.Insert(new BsonDocument { { "blah", i } });
+                    collection.InsertAsyncAsync(new BsonDocument { { "blah", i } });
                 }
             }
         }

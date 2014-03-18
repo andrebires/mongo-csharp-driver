@@ -17,6 +17,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -40,10 +41,10 @@ namespace MongoDB.Driver.Operations
             get { return _writeConcern; }
         }
 
-        protected WriteConcernResult ReadWriteConcernResult(MongoConnection connection, SendMessageWithWriteConcernResult sendMessageResult)
+        protected async Task<WriteConcernResult> ReadWriteConcernResultAsync(MongoConnection connection, SendMessageWithWriteConcernResult sendMessageResult)
         {
             var writeConcernResultSerializer = BsonSerializer.LookupSerializer(typeof(WriteConcernResult));
-            var replyMessage = connection.ReceiveMessage<WriteConcernResult>(ReaderSettings, writeConcernResultSerializer, null);
+            var replyMessage = await connection.ReceiveMessageAsync<WriteConcernResult>(ReaderSettings, writeConcernResultSerializer, null);
             if (replyMessage.NumberReturned == 0)
             {
                 throw new MongoCommandException("Command 'getLastError' failed. No response returned");
@@ -60,7 +61,7 @@ namespace MongoDB.Driver.Operations
             return writeConcernResult;
         }
 
-        protected SendMessageWithWriteConcernResult SendMessageWithWriteConcern(
+        protected async Task<SendMessageWithWriteConcernResult> SendMessageWithWriteConcernAsync(
             MongoConnection connection,
             BsonBuffer buffer,
             int requestId,
@@ -96,7 +97,7 @@ namespace MongoDB.Driver.Operations
                 result.GetLastErrorRequestId = getLastErrorMessage.RequestId;
             }
 
-            connection.SendMessage(buffer, requestId);
+            await connection.SendMessageAsync(buffer, requestId);
 
             return result;
         }

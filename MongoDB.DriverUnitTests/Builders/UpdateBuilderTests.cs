@@ -854,11 +854,11 @@ namespace MongoDB.DriverUnitTests.Builders
         public void TestReplaceWithInvalidFieldName()
         {
             _collection.Drop();
-            _collection.Insert(new BsonDocument { { "_id", 1 }, { "x", 1 } });
+            _collection.InsertAsyncAsync(new BsonDocument { { "_id", 1 }, { "x", 1 } });
 
             var query = Query.EQ("_id", 1);
             var update = Update.Replace(new BsonDocument { { "_id", 1 }, { "$x", 1 } });
-            Assert.Throws<BsonSerializationException>(() => { _collection.Update(query, update); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.UpdateAsync(query, update); });
         }
 
         [Test]

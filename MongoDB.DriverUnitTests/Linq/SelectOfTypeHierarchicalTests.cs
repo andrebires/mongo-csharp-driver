@@ -55,9 +55,9 @@ namespace MongoDB.DriverUnitTests.Linq
             _collection = Configuration.GetTestCollection<B>();
 
             _collection.Drop();
-            _collection.Insert(new B { Id = ObjectId.GenerateNewId(), b = 1 });
-            _collection.Insert(new C { Id = ObjectId.GenerateNewId(), b = 2, c = 2 });
-            _collection.Insert(new D { Id = ObjectId.GenerateNewId(), b = 3, c = 3, d = 3 });
+            _collection.InsertAsyncAsync(new B { Id = ObjectId.GenerateNewId(), b = 1 });
+            _collection.InsertAsyncAsync(new C { Id = ObjectId.GenerateNewId(), b = 2, c = 2 });
+            _collection.InsertAsyncAsync(new D { Id = ObjectId.GenerateNewId(), b = 3, c = 3, d = 3 });
         }
 
         [Test]

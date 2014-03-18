@@ -17,6 +17,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -49,16 +50,16 @@ namespace MongoDB.Driver.Operations
             _serializer = serializer;
         }
 
-        public TCommandResult Execute(MongoConnection connection)
+        public async Task<TCommandResult> ExecuteAsync(MongoConnection connection)
         {
             var maxWireDocumentSize = connection.ServerInstance.MaxWireDocumentSize;
             var forShardRouter = connection.ServerInstance.InstanceType == MongoServerInstanceType.ShardRouter;
             var wrappedQuery = WrapQuery(_command, _options, _readPreference, forShardRouter);
 
             var queryMessage = new MongoQueryMessage(WriterSettings, CollectionFullName, _flags, maxWireDocumentSize, 0, -1, wrappedQuery, null);
-            connection.SendMessage(queryMessage);
+            await connection.SendMessageAsync(queryMessage);
 
-            var reply = connection.ReceiveMessage<TCommandResult>(ReaderSettings, _serializer, _serializationOptions);
+            var reply = await connection.ReceiveMessageAsync<TCommandResult>(ReaderSettings, _serializer, _serializationOptions).ConfigureAwait(false);
             if (reply.NumberReturned == 0)
             {
                 var commandDocument = _command.ToBsonDocument();

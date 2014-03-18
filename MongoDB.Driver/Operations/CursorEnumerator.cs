@@ -20,10 +20,11 @@ using System.Linq;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
-    internal class CursorEnumerator<TDocument> : IEnumerator<TDocument>
+    internal class CursorEnumerator<TDocument> : IEnumeratorAsync<TDocument>
     {
         // private fields
         private readonly int _batchSize;
@@ -91,6 +92,11 @@ namespace MongoDB.Driver.Operations
 
         public bool MoveNext()
         {
+            return MoveNextAsync().Result;
+        }
+
+        public async Task<bool> MoveNextAsync()
+        {
             ThrowIfDisposed();
             if (_done)
             {
@@ -113,7 +119,8 @@ namespace MongoDB.Driver.Operations
 
             while (_cursorId != 0)
             {
-                var batch = GetNextBatch();
+                // TODO: Blocking call 
+                var batch = await GetNextBatchAsync().ConfigureAwait(false);
                 _cursorId = batch.CursorId;
                 _currentBatch = batch.Documents;
                 _currentBatchIndex = 0;
@@ -138,7 +145,7 @@ namespace MongoDB.Driver.Operations
                     {
                         try
                         {
-                            KillCursor(_connectionProvider, _cursorId);
+                            KillCursorAsync(_connectionProvider, _cursorId).Wait();
                         }
                         catch
                         {
@@ -150,9 +157,9 @@ namespace MongoDB.Driver.Operations
             }
         }
 
-        private MongoReplyMessage<TDocument> GetNextBatch()
+        private async Task<MongoReplyMessage<TDocument>> GetNextBatchAsync()
         {
-            var connection = _connectionProvider.AcquireConnection();
+            var connection = await _connectionProvider.AcquireConnectionAsync().ConfigureAwait(false);
             try
             {
                 int numberToReturn;
@@ -167,8 +174,8 @@ namespace MongoDB.Driver.Operations
                 }
 
                 var getMoreMessage = new MongoGetMoreMessage(_collectionFullName, numberToReturn, _cursorId);
-                connection.SendMessage(getMoreMessage);
-                return connection.ReceiveMessage<TDocument>(_readerSettings, _serializer, _serializationOptions);
+                await connection.SendMessageAsync(getMoreMessage).ConfigureAwait(false);
+                return await connection.ReceiveMessageAsync<TDocument>(_readerSettings, _serializer, _serializationOptions).ConfigureAwait(false);
             }
             finally
             {
@@ -176,13 +183,13 @@ namespace MongoDB.Driver.Operations
             }
         }
 
-        private void KillCursor(IConnectionProvider connectionProvider, long cursorId)
+        private async Task KillCursorAsync(IConnectionProvider connectionProvider, long cursorId)
         {
-            var connection = connectionProvider.AcquireConnection();
+            var connection = await connectionProvider.AcquireConnectionAsync().ConfigureAwait(false);
             try
             {
                 var killCursorsMessage = new MongoKillCursorsMessage(cursorId);
-                connection.SendMessage(killCursorsMessage);
+                await connection.SendMessageAsync(killCursorsMessage);
             }
             finally
             {

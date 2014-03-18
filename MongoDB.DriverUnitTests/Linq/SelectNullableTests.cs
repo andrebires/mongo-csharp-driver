@@ -49,12 +49,12 @@ namespace MongoDB.DriverUnitTests.Linq
             _collection = Configuration.GetTestCollection<C>();
 
             _collection.Drop();
-            _collection.Insert(new C { E = null });
-            _collection.Insert(new C { E = E.A });
-            _collection.Insert(new C { E = E.B });
-            _collection.Insert(new C { X = null });
-            _collection.Insert(new C { X = 1 });
-            _collection.Insert(new C { X = 2 });
+            _collection.InsertAsyncAsync(new C { E = null });
+            _collection.InsertAsyncAsync(new C { E = E.A });
+            _collection.InsertAsyncAsync(new C { E = E.B });
+            _collection.InsertAsyncAsync(new C { X = null });
+            _collection.InsertAsyncAsync(new C { X = 1 });
+            _collection.InsertAsyncAsync(new C { X = 2 });
         }
 
         [Test]

@@ -42,9 +42,9 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp524
         [Test]
         public void TestDistinctMustBeLastOperator()
         {
-            _collection.RemoveAll();
-            _collection.Insert(new C { Id = 1, X = 1 });
-            _collection.Insert(new C { Id = 2, X = 2 });
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(new C { Id = 1, X = 1 });
+            _collection.InsertAsyncAsync(new C { Id = 2, X = 2 });
 
             var query = _collection.AsQueryable()
                 .Select(d => d.X)

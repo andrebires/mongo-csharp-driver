@@ -48,8 +48,8 @@ namespace MongoDB.DriverUnitTests.Builders
             _collection = db.GetCollection<GeoClass>("geo");
 
             _collection.Drop();
-            _collection.CreateIndex(IndexKeys<GeoClass>.GeoSpatialSpherical(x => x.Location));
-            _collection.CreateIndex(IndexKeys<GeoClass>.GeoSpatialSpherical(x => x.Surrounding));
+            _collection.CreateIndexAsyncAsync(IndexKeys<GeoClass>.GeoSpatialSpherical(x => x.Location));
+            _collection.CreateIndexAsyncAsync(IndexKeys<GeoClass>.GeoSpatialSpherical(x => x.Surrounding));
 
             var doc = new GeoClass
             {
@@ -62,7 +62,7 @@ namespace MongoDB.DriverUnitTests.Builders
                     GeoJson.Geographic(40, 18))
             };
 
-            _collection.Save(doc);
+            _collection.SaveAsyncAsyncAsync(doc);
         }
 
         [Test]

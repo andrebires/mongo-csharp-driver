@@ -17,6 +17,7 @@ using System;
 using System.Linq;
 using MongoDB.Bson.IO;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -33,13 +34,13 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public WriteConcernResult Execute(MongoConnection connection)
+        public async Task<WriteConcernResult> ExecuteAsync(MongoConnection connection)
         {
             var serverInstance = connection.ServerInstance;
             if (serverInstance.Supports(FeatureId.WriteCommands) && _args.WriteConcern.Enabled)
             {
                 var emulator = new DeleteOpcodeOperationEmulator(_args);
-                return emulator.Execute(connection);
+                return await emulator.ExecuteAsync(connection);
             }
 
             SendMessageWithWriteConcernResult sendMessageResult;
@@ -65,10 +66,10 @@ namespace MongoDB.Driver.Operations
                 var message = new MongoDeleteMessage(WriterSettings, CollectionFullName, flags, maxDocumentSize, deleteRequest.Query);
                 message.WriteTo(buffer);
 
-                sendMessageResult = SendMessageWithWriteConcern(connection, buffer, message.RequestId, ReaderSettings, WriterSettings, WriteConcern);
+                sendMessageResult = await SendMessageWithWriteConcernAsync(connection, buffer, message.RequestId, ReaderSettings, WriterSettings, WriteConcern);
             }
 
-            return WriteConcern.Enabled ? ReadWriteConcernResult(connection, sendMessageResult) : null;
+            return WriteConcern.Enabled ? await ReadWriteConcernResultAsync(connection, sendMessageResult) : null;
         }
     }
 }

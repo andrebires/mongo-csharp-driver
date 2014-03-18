@@ -152,11 +152,11 @@ namespace MongoDB.DriverUnitTests.Linq
 
             // documents inserted deliberately out of order to test sorting
             _collection.Drop();
-            _collection.Insert(new C { Id = _id2, X = 2, LX = 2, Y = 11, D = new D { Z = 22 }, A = new[] { 2, 3, 4 }, DA = new List<D> { new D { Z = 111 }, new D { Z = 222 } }, L = new List<int> { 2, 3, 4 } });
-            _collection.Insert(new C { Id = _id1, X = 1, LX = 1, Y = 11, D = new D { Z = 11 }, S = "abc", SA = new string[] { "Tom", "Dick", "Harry" } });
-            _collection.Insert(new C { Id = _id3, X = 3, LX = 3, Y = 33, D = new D { Z = 33 }, B = true, BA = new bool[] { true }, E = E.A, EA = new E[] { E.A, E.B } });
-            _collection.Insert(new C { Id = _id5, X = 5, LX = 5, Y = 44, D = new D { Z = 55 }, DBRef = new MongoDBRef("db", "c", 1) });
-            _collection.Insert(new C { Id = _id4, X = 4, LX = 4, Y = 44, D = new D { Z = 44 }, S = "   xyz   ", DA = new List<D> { new D { Z = 333 }, new D { Z = 444 } } });
+            _collection.InsertAsyncAsync(new C { Id = _id2, X = 2, LX = 2, Y = 11, D = new D { Z = 22 }, A = new[] { 2, 3, 4 }, DA = new List<D> { new D { Z = 111 }, new D { Z = 222 } }, L = new List<int> { 2, 3, 4 } });
+            _collection.InsertAsyncAsync(new C { Id = _id1, X = 1, LX = 1, Y = 11, D = new D { Z = 11 }, S = "abc", SA = new string[] { "Tom", "Dick", "Harry" } });
+            _collection.InsertAsyncAsync(new C { Id = _id3, X = 3, LX = 3, Y = 33, D = new D { Z = 33 }, B = true, BA = new bool[] { true }, E = E.A, EA = new E[] { E.A, E.B } });
+            _collection.InsertAsyncAsync(new C { Id = _id5, X = 5, LX = 5, Y = 44, D = new D { Z = 55 }, DBRef = new MongoDBRef("db", "c", 1) });
+            _collection.InsertAsyncAsync(new C { Id = _id4, X = 4, LX = 4, Y = 44, D = new D { Z = 44 }, S = "   xyz   ", DA = new List<D> { new D { Z = 333 }, new D { Z = 444 } } });
         }
 
         [Test]
@@ -4799,13 +4799,13 @@ namespace MongoDB.DriverUnitTests.Linq
         {
             var tempCollection = _database.GetCollection("temp");
             tempCollection.Drop();
-            tempCollection.Insert(new C { S = "bxxx" });
-            tempCollection.Insert(new C { S = "xbxx" });
-            tempCollection.Insert(new C { S = "xxbx" });
-            tempCollection.Insert(new C { S = "xxxb" });
-            tempCollection.Insert(new C { S = "bxbx" });
-            tempCollection.Insert(new C { S = "xbbx" });
-            tempCollection.Insert(new C { S = "xxbb" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "bxxx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xbxx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xxbx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xxxb" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "bxbx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xbbx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xxbb" });
 
             var query1 =
                 from c in tempCollection.AsQueryable<C>()
@@ -4906,13 +4906,13 @@ namespace MongoDB.DriverUnitTests.Linq
         {
             var tempCollection = _database.GetCollection("temp");
             tempCollection.Drop();
-            tempCollection.Insert(new C { S = "bxxx" });
-            tempCollection.Insert(new C { S = "xbxx" });
-            tempCollection.Insert(new C { S = "xxbx" });
-            tempCollection.Insert(new C { S = "xxxb" });
-            tempCollection.Insert(new C { S = "bxbx" });
-            tempCollection.Insert(new C { S = "xbbx" });
-            tempCollection.Insert(new C { S = "xxbb" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "bxxx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xbxx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xxbx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xxxb" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "bxbx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xbbx" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xxbb" });
 
             var query1 =
                 from c in tempCollection.AsQueryable<C>()
@@ -5013,12 +5013,12 @@ namespace MongoDB.DriverUnitTests.Linq
         {
             var tempCollection = _database.GetCollection("temp");
             tempCollection.Drop();
-            tempCollection.Insert(new C { S = "xyzaaa" });
-            tempCollection.Insert(new C { S = "axyzaa" });
-            tempCollection.Insert(new C { S = "aaxyza" });
-            tempCollection.Insert(new C { S = "aaaxyz" });
-            tempCollection.Insert(new C { S = "aaaaxy" });
-            tempCollection.Insert(new C { S = "xyzxyz" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xyzaaa" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "axyzaa" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "aaxyza" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "aaaxyz" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "aaaaxy" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "xyzxyz" });
 
             var query1 =
                 from c in tempCollection.AsQueryable<C>()
@@ -5236,10 +5236,10 @@ namespace MongoDB.DriverUnitTests.Linq
         {
             var tempCollection = _database.GetCollection("temp");
             tempCollection.Drop();
-            tempCollection.Insert(new C()); // serialized document will have no "s" field
-            tempCollection.Insert(new BsonDocument("s", BsonNull.Value)); // work around [BsonIgnoreIfNull] on S
-            tempCollection.Insert(new C { S = "" });
-            tempCollection.Insert(new C { S = "x" });
+            tempCollection.InsertAsyncAsyncAsync(new C()); // serialized document will have no "s" field
+            tempCollection.InsertAsyncAsync(new BsonDocument("s", BsonNull.Value)); // work around [BsonIgnoreIfNull] on S
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "" });
+            tempCollection.InsertAsyncAsyncAsync(new C { S = "x" });
 
             var query = from c in tempCollection.AsQueryable<C>()
                         where string.IsNullOrEmpty(c.S)

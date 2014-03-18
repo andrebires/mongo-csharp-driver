@@ -44,8 +44,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp258
         [Test]
         public void TestDateTimePropertyWithNewMaxDateTimeRepresentation()
         {
-            _collection.RemoveAll();
-            _collection.Insert(
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(
                 new BsonDocument
                 {
                     { "_id", ObjectId.GenerateNewId() },
@@ -59,8 +59,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp258
         [Test]
         public void TestDateTimePropertyWithOldMaxDateTimeRepresentation()
         {
-            _collection.RemoveAll();
-            _collection.Insert(
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(
                 new BsonDocument
                 {
                     { "_id", ObjectId.GenerateNewId() },
@@ -74,8 +74,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp258
         [Test]
         public void TestDocumentWithNewMaxDateTimeRepresentation()
         {
-            _collection.RemoveAll();
-            _collection.Insert(
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(
                 new BsonDocument
                 {
                     { "_id", ObjectId.GenerateNewId() },
@@ -90,8 +90,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp258
         [Test]
         public void TestDocumentWithOldMaxDateTimeRepresentation()
         {
-            _collection.RemoveAll();
-            _collection.Insert(
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsyncAsync(
                 new BsonDocument
                 {
                     { "_id", ObjectId.GenerateNewId() },

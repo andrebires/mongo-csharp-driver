@@ -43,8 +43,8 @@ namespace MongoDB.DriverUnitTests.CommandResults
                 if (instance.InstanceType != MongoServerInstanceType.ShardRouter)
                 {
                     // make sure collection exists and has exactly one document
-                    _collection.RemoveAll();
-                    _collection.Insert(new BsonDocument());
+                    _collection.RemoveAllAsync();
+                    _collection.InsertAsyncAsync(new BsonDocument());
 
                     var result = _collection.Validate();
                     Assert.IsTrue(result.Ok);

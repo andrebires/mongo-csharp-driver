@@ -113,13 +113,13 @@ namespace MongoDB.DriverUnitTests.Builders
                 {
                     var collection = Configuration.TestDatabase.GetCollection<BsonDocument>("test_meta_text");
                     collection.Drop();
-                    collection.CreateIndex(IndexKeys.Text("textfield"));
-                    collection.Insert(new BsonDocument
+                    collection.CreateIndexAsyncAsync(IndexKeys.Text("textfield"));
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 1 },
                         { "textfield", "The quick brown fox jumped" }
                     });
-                    collection.Insert(new BsonDocument
+                    collection.InsertAsyncAsync(new BsonDocument
                     {
                         { "_id", 2 },
                         { "textfield", "over the lazy brown dog" }

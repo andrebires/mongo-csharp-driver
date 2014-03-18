@@ -18,6 +18,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Communication.Security
 {
@@ -38,13 +39,13 @@ namespace MongoDB.Driver.Communication.Security
         /// </summary>
         /// <param name="connection">The connection.</param>
         /// <param name="credential">The credential.</param>
-        public void Authenticate(MongoConnection connection, MongoCredential credential)
+        public async Task AuthenticateAsync(MongoConnection connection, MongoCredential credential)
         {
             string nonce;
             try
             {
                 var nonceCommand = new CommandDocument("getnonce", 1);
-                var nonceResult = RunCommand(connection, credential.Source, nonceCommand);
+                var nonceResult = await RunCommandAsync(connection, credential.Source, nonceCommand).ConfigureAwait(false);
                 nonce = nonceResult.Response["nonce"].AsString;
             }
             catch (MongoCommandException ex)
@@ -64,7 +65,7 @@ namespace MongoDB.Driver.Communication.Security
                     { "key", digest }
                 };
 
-                RunCommand(connection, credential.Source, authenticateCommand);
+                await RunCommandAsync(connection, credential.Source, authenticateCommand).ConfigureAwait(false);
             }
             catch (MongoCommandException ex)
             {
@@ -87,7 +88,7 @@ namespace MongoDB.Driver.Communication.Security
         }
 
         // private methods
-        private CommandResult RunCommand(MongoConnection connection, string databaseName, IMongoCommand command)
+        private Task<CommandResult> RunCommandAsync(MongoConnection connection, string databaseName, IMongoCommand command)
         {
             var readerSettings = new BsonBinaryReaderSettings();
             var writerSettings = new BsonBinaryWriterSettings();
@@ -104,7 +105,7 @@ namespace MongoDB.Driver.Communication.Security
                 null, // serializationOptions
                 resultSerializer);
 
-            return commandOperation.Execute(connection);
+            return commandOperation.ExecuteAsync(connection);
         }
     }
 }

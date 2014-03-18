@@ -16,6 +16,7 @@
 using System.Linq;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Support;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -32,7 +33,7 @@ namespace MongoDB.Driver.Operations
         }
 
         // protected methods
-        protected override BulkWriteBatchResult EmulateSingleRequest(MongoConnection connection, WriteRequest request, int originalIndex)
+        protected async override Task<BulkWriteBatchResult> EmulateSingleRequestAsync(MongoConnection connection, WriteRequest request, int originalIndex)
         {
             var serverInstance = connection.ServerInstance;
             var insertRequest = (InsertRequest)request;
@@ -58,7 +59,7 @@ namespace MongoDB.Driver.Operations
             WriteConcernException writeConcernException = null;
             try
             {
-                var operationResult = operation.Execute(connection);
+                var operationResult = await operation.ExecuteAsync(connection);
                 if (operationResult != null)
                 {
                     writeConcernResult = operationResult.First();

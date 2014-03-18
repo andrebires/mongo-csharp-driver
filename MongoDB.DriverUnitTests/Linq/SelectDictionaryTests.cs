@@ -72,10 +72,10 @@ namespace MongoDB.DriverUnitTests.Linq
             var hy = new Hashtable { { "y", 1 } };
 
             _collection.Drop();
-            _collection.Insert(new C { D = null, E = null, F = null, G = null, H = null, I = null, J = null, K = null });
-            _collection.Insert(new C { D = de, E = de, F = de, G = de, H = he, I = he, J = he, K = he });
-            _collection.Insert(new C { D = dx, E = dx, F = dx, G = dx, H = hx, I = hx, J = hx, K = hx });
-            _collection.Insert(new C { D = dy, E = dy, F = dy, G = dy, H = hy, I = hy, J = hy, K = hy });
+            _collection.InsertAsync(new C { D = null, E = null, F = null, G = null, H = null, I = null, J = null, K = null });
+            _collection.InsertAsync(new C { D = de, E = de, F = de, G = de, H = he, I = he, J = he, K = he });
+            _collection.InsertAsync(new C { D = dx, E = dx, F = dx, G = dx, H = hx, I = hx, J = hx, K = hx });
+            _collection.InsertAsync(new C { D = dy, E = dy, F = dy, G = dy, H = hy, I = hy, J = hy, K = hy });
         }
 
         [Test]

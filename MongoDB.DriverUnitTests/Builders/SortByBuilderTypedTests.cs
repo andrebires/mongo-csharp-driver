@@ -120,26 +120,26 @@ namespace MongoDB.DriverUnitTests.Builders
                 {
                     var collection = Configuration.TestDatabase.GetCollection<Test>("test_meta_text_sort");
                     collection.Drop();
-                    collection.CreateIndex(IndexKeys<Test>.Text(x => x.T));
-                    collection.Insert(new Test
+                    collection.CreateIndexAsyncAsync(IndexKeys<Test>.Text(x => x.T));
+                    collection.InsertAsyncAsync(new Test
                     {
                         Id = 1,
                         T = "The quick brown fox jumped",
                         z = 1
                     });
-                    collection.Insert(new Test
+                    collection.InsertAsyncAsync(new Test
                     {
                         Id = 2,
                         T = "over the lazy brown dog and brown cat",
                         z = 2
                     });
-                    collection.Insert(new Test
+                    collection.InsertAsyncAsync(new Test
                     {
                         Id = 3,
                         T = "over the lazy brown dog and brown cat",
                         z = 4
                     });
-                    collection.Insert(new Test
+                    collection.InsertAsyncAsync(new Test
                     {
                         Id = 4,
                         T = "over the lazy brown dog and brown cat",

@@ -19,6 +19,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.GridFS
 {
@@ -189,7 +190,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.AppendText(remoteFileName);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -203,20 +204,20 @@ namespace MongoDB.Driver.GridFS
         /// <param name="sourceFileName">The source file name.</param>
         /// <param name="destFileName">The destination file name.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo CopyTo(string sourceFileName, string destFileName)
+        public async Task<MongoGridFSFileInfo> CopyToAsync(string sourceFileName, string destFileName)
         {
             if (_settings.ReadPreference != ReadPreference.Primary)
             {
                 var gridFS = WithReadPreferencePrimary();
-                return gridFS.CopyTo(sourceFileName, destFileName);
+                return await gridFS.CopyToAsync(sourceFileName, destFileName).ConfigureAwait(false);
             }
-            var fileInfo = FindOne(sourceFileName);
+            var fileInfo = await FindOneAsync(sourceFileName).ConfigureAwait(false);
             if (fileInfo == null)
             {
                 var message = string.Format("GridFS file '{0}' not found.", sourceFileName);
                 throw new FileNotFoundException(message);
             }
-            return fileInfo.CopyTo(destFileName);
+            return await fileInfo.CopyToAsync(destFileName).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -226,7 +227,7 @@ namespace MongoDB.Driver.GridFS
         /// <param name="destFileName">The destination file name.</param>
         /// <param name="createOptions">The create options.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo CopyTo(
+        public async Task<MongoGridFSFileInfo> CopyToAsync(
             string sourceFileName,
             string destFileName,
             MongoGridFSCreateOptions createOptions)
@@ -234,15 +235,15 @@ namespace MongoDB.Driver.GridFS
             if (_settings.ReadPreference != ReadPreference.Primary)
             {
                 var gridFS = WithReadPreferencePrimary();
-                return gridFS.CopyTo(sourceFileName, destFileName, createOptions);
+                return await gridFS.CopyToAsync(sourceFileName, destFileName, createOptions).ConfigureAwait(false);
             }
-            var fileInfo = FindOne(sourceFileName);
+            var fileInfo = await FindOneAsync(sourceFileName).ConfigureAwait(false);
             if (fileInfo == null)
             {
                 var message = string.Format("GridFS file '{0}' not found.", sourceFileName);
                 throw new FileNotFoundException(message);
             }
-            return fileInfo.CopyTo(destFileName, createOptions);
+            return await fileInfo.CopyToAsync(destFileName, createOptions).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -257,7 +258,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.Create(remoteFileName);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -278,7 +279,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.Create(remoteFileName, createOptions);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName, createOptions);
@@ -297,7 +298,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.CreateText(remoteFileName);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -318,7 +319,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.CreateText(remoteFileName, createOptions);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName, createOptions);
@@ -348,17 +349,17 @@ namespace MongoDB.Driver.GridFS
         /// Deletes all versions of a GridFS file.
         /// </summary>
         /// <param name="remoteFileName">The remote file name.</param>
-        public void Delete(string remoteFileName)
+        public async Task DeleteAsync(string remoteFileName)
         {
             if (_settings.ReadPreference != ReadPreference.Primary)
             {
                 var gridFS = WithReadPreferencePrimary();
-                gridFS.Delete(remoteFileName);
+                await gridFS.DeleteAsync(remoteFileName);
                 return;
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
-                EnsureIndexes();
+                await EnsureIndexesAsync();
                 Delete(Query.EQ("filename", remoteFileName));
             }
         }
@@ -383,9 +384,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="stream">The destination stream.</param>
         /// <param name="query">The GridFS file.</param>
-        public void Download(Stream stream, IMongoQuery query)
+        public Task DownloadAsync(Stream stream, IMongoQuery query)
         {
-            Download(stream, query, -1); // most recent version
+            return DownloadAsync(stream, query, -1); // most recent version
         }
 
         /// <summary>
@@ -394,16 +395,16 @@ namespace MongoDB.Driver.GridFS
         /// <param name="stream">The destination stream.</param>
         /// <param name="query">The GridFS file.</param>
         /// <param name="version">The version to download.</param>
-        public void Download(Stream stream, IMongoQuery query, int version)
+        public async Task DownloadAsync(Stream stream, IMongoQuery query, int version)
         {
-            var fileInfo = FindOne(query, version);
+            var fileInfo = await FindOneAsync(query, version).ConfigureAwait(false);
             if (fileInfo == null)
             {
                 var jsonQuery = query.ToJson();
                 string errorMessage = string.Format("GridFS file '{0}' not found.", jsonQuery);
                 throw new FileNotFoundException(errorMessage, jsonQuery);
             }
-            Download(stream, fileInfo);
+            await DownloadAsync(stream, fileInfo).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -411,14 +412,14 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="stream">The destination stream.</param>
         /// <param name="fileInfo">The GridFS file.</param>
-        public void Download(Stream stream, MongoGridFSFileInfo fileInfo)
+        public async Task DownloadAsync(Stream stream, MongoGridFSFileInfo fileInfo)
         {
             if (_settings.VerifyMD5 && fileInfo.MD5 == null)
             {
                 throw new MongoGridFSException("VerifyMD5 is true and file being downloaded has no MD5 hash.");
             }
 
-            using (_server.RequestStart(null, _settings.ReadPreference))
+            using (_server.RequestStartAsync(null, _settings.ReadPreference))
             {
                 var database = GetDatabase();
                 var chunksCollection = GetChunksCollection(database);
@@ -430,7 +431,7 @@ namespace MongoDB.Driver.GridFS
                     for (var n = 0L; n < numberOfChunks; n++)
                     {
                         var query = Query.And(Query.EQ("files_id", fileInfo.Id), Query.EQ("n", n));
-                        var chunk = chunksCollection.FindOne(query);
+                        var chunk = await chunksCollection.FindOneAsync(query).ConfigureAwait(false);
                         if (chunk == null)
                         {
                             string errorMessage = string.Format("Chunk {0} missing for GridFS file '{1}'.", n, fileInfo.Name);
@@ -472,9 +473,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="stream">The destination stream.</param>
         /// <param name="remoteFileName">The remote file name.</param>
-        public void Download(Stream stream, string remoteFileName)
+        public Task DownloadAsync(Stream stream, string remoteFileName)
         {
-            Download(stream, remoteFileName, -1); // most recent version
+            return DownloadAsync(stream, remoteFileName, -1); // most recent version
         }
 
         /// <summary>
@@ -483,18 +484,18 @@ namespace MongoDB.Driver.GridFS
         /// <param name="stream">The destination stream.</param>
         /// <param name="remoteFileName">The remote file name.</param>
         /// <param name="version">The version to download.</param>
-        public void Download(Stream stream, string remoteFileName, int version)
+        public Task DownloadAsync(Stream stream, string remoteFileName, int version)
         {
-            Download(stream, Query.EQ("filename", remoteFileName), version);
+            return DownloadAsync(stream, Query.EQ("filename", remoteFileName), version);
         }
 
         /// <summary>
         /// Downloads the most recent version of a GridFS file.
         /// </summary>
         /// <param name="fileName">The file name (same local and remote names).</param>
-        public void Download(string fileName)
+        public Task DownloadAsync(string fileName)
         {
-            Download(fileName, -1); // most recent version
+            return DownloadAsync(fileName, -1); // most recent version
         }
 
         /// <summary>
@@ -502,9 +503,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="fileName">The file name (same local and remote names).</param>
         /// <param name="version">The version to download.</param>
-        public void Download(string fileName, int version)
+        public Task DownloadAsync(string fileName, int version)
         {
-            Download(fileName, fileName, version); // same local and remote file names
+            return DownloadAsync(fileName, fileName, version); // same local and remote file names
         }
 
         /// <summary>
@@ -512,9 +513,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="localFileName">The local file name.</param>
         /// <param name="query">The GridFS file.</param>
-        public void Download(string localFileName, IMongoQuery query)
+        public Task DownloadAsync(string localFileName, IMongoQuery query)
         {
-            Download(localFileName, query, -1); // most recent version
+            return DownloadAsync(localFileName, query, -1); // most recent version
         }
 
         /// <summary>
@@ -523,11 +524,11 @@ namespace MongoDB.Driver.GridFS
         /// <param name="localFileName">The local file name.</param>
         /// <param name="query">The GridFS file.</param>
         /// <param name="version">The version to download.</param>
-        public void Download(string localFileName, IMongoQuery query, int version)
+        public async Task DownloadAsync(string localFileName, IMongoQuery query, int version)
         {
             using (Stream stream = File.Create(localFileName))
             {
-                Download(stream, query, version);
+                await DownloadAsync(stream, query, version).ConfigureAwait(false);
             }
         }
 
@@ -536,11 +537,11 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="localFileName">The local file name.</param>
         /// <param name="fileInfo">The GridFS file.</param>
-        public void Download(string localFileName, MongoGridFSFileInfo fileInfo)
+        public async Task DownloadAsync(string localFileName, MongoGridFSFileInfo fileInfo)
         {
             using (Stream stream = File.Create(localFileName))
             {
-                Download(stream, fileInfo);
+                await DownloadAsync(stream, fileInfo).ConfigureAwait(false);
             }
         }
 
@@ -549,9 +550,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="localFileName">The local file name.</param>
         /// <param name="remoteFileName">The remote file name.</param>
-        public void Download(string localFileName, string remoteFileName)
+        public Task DownloadAsync(string localFileName, string remoteFileName)
         {
-            Download(localFileName, remoteFileName, -1); // most recent version
+            return DownloadAsync(localFileName, remoteFileName, -1); // most recent version
         }
 
         /// <summary>
@@ -560,27 +561,27 @@ namespace MongoDB.Driver.GridFS
         /// <param name="localFileName">The local file name.</param>
         /// <param name="remoteFileName">The remote file name.</param>
         /// <param name="version">The version to download.</param>
-        public void Download(string localFileName, string remoteFileName, int version)
+        public async Task DownloadAsync(string localFileName, string remoteFileName, int version)
         {
             using (Stream stream = File.Create(localFileName))
             {
-                Download(stream, remoteFileName, version);
+                await DownloadAsync(stream, remoteFileName, version).ConfigureAwait(false);
             }
         }
 
         /// <summary>
         /// Ensures that the proper indexes for GridFS exist (only creates the new indexes if there are fewer than 1000 GridFS files).
         /// </summary>
-        public void EnsureIndexes()
+        public Task EnsureIndexesAsync()
         {
-            EnsureIndexes(1000);
+            return EnsureIndexesAsync(1000);
         }
 
         /// <summary>
         /// Ensures that the proper indexes for GridFS exist.
         /// </summary>
         /// <param name="maxFiles">Only create new indexes if there are fewer than this number of GridFS files).</param>
-        public void EnsureIndexes(int maxFiles)
+        public async Task EnsureIndexesAsync(int maxFiles)
         {
             // EnsureIndexes should only be called for update operations
             // read-only operations shouldn't call EnsureIndexes because:
@@ -592,11 +593,11 @@ namespace MongoDB.Driver.GridFS
             var chunksCollection = GetChunksCollection(database);
 
             // only create indexes if number of GridFS files is still small (to avoid performance surprises)
-            var count = filesCollection.Count();
+            var count = await filesCollection.CountAsync().ConfigureAwait(false);
             if (count < maxFiles)
             {
-                filesCollection.CreateIndex("filename", "uploadDate");
-                chunksCollection.CreateIndex(IndexKeys.Ascending("files_id", "n"), IndexOptions.SetUnique(true));
+                await filesCollection.CreateIndexAsync("filename", "uploadDate");
+                await chunksCollection.CreateIndexAsync(IndexKeys.Ascending("files_id", "n"), IndexOptions.SetUnique(true));
             }
         }
 
@@ -605,11 +606,11 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="query">The GridFS file.</param>
         /// <returns>True if the GridFS file exists.</returns>
-        public bool Exists(IMongoQuery query)
+        public async Task<bool> ExistsAsync(IMongoQuery query)
         {
             var database = GetDatabase();
             var filesCollection = GetFilesCollection(database);
-            return filesCollection.Count(query) > 0;
+            return (await filesCollection.CountAsync(query).ConfigureAwait(false)) > 0;
         }
 
         /// <summary>
@@ -617,9 +618,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="remoteFileName">The GridFS file.</param>
         /// <returns>True if the GridFS file exists.</returns>
-        public bool Exists(string remoteFileName)
+        public Task<bool> ExistsAsync(string remoteFileName)
         {
-            return Exists(Query.EQ("filename", remoteFileName));
+            return ExistsAsync(Query.EQ("filename", remoteFileName));
         }
 
         /// <summary>
@@ -627,9 +628,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="id">The GridFS file.</param>
         /// <returns>True if the GridFS file exists.</returns>
-        public bool ExistsById(BsonValue id)
+        public Task<bool> ExistsByIdAsync(BsonValue id)
         {
-            return Exists(Query.EQ("_id", id));
+            return ExistsAsync(Query.EQ("_id", id));
         }
 
         /// <summary>
@@ -639,7 +640,7 @@ namespace MongoDB.Driver.GridFS
         /// <returns>The matching GridFS files.</returns>
         public MongoCursor<MongoGridFSFileInfo> Find(IMongoQuery query)
         {
-            using (_server.RequestStart(null, _settings.ReadPreference))
+            using (_server.RequestStartAsync(null, _settings.ReadPreference))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var database = GetDatabase();
@@ -679,9 +680,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="query">The GridFS file.</param>
         /// <returns>The matching GridFS file.</returns>
-        public MongoGridFSFileInfo FindOne(IMongoQuery query)
+        public Task<MongoGridFSFileInfo> FindOneAsync(IMongoQuery query)
         {
-            return FindOne(query, -1); // most recent version
+            return FindOneAsync(query, -1); // most recent version
         }
 
         /// <summary>
@@ -690,9 +691,9 @@ namespace MongoDB.Driver.GridFS
         /// <param name="query">The GridFS file.</param>
         /// <param name="version">The version to find (1 is oldest, -1 is newest, 0 is no sort).</param>
         /// <returns>The matching GridFS file.</returns>
-        public MongoGridFSFileInfo FindOne(IMongoQuery query, int version)
+        public async Task<MongoGridFSFileInfo> FindOneAsync(IMongoQuery query, int version)
         {
-            using (_server.RequestStart(null, _settings.ReadPreference))
+            using (_server.RequestStartAsync(null, _settings.ReadPreference))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var database = GetDatabase();
@@ -709,7 +710,7 @@ namespace MongoDB.Driver.GridFS
                 }
                 else
                 {
-                    fileInfo = filesCollection.FindOne(query);
+                    fileInfo = await filesCollection.FindOneAsync(query).ConfigureAwait(false);
                 }
 
                 if (fileInfo != null)
@@ -728,9 +729,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="remoteFileName">The remote file name.</param>
         /// <returns>The matching GridFS file.</returns>
-        public MongoGridFSFileInfo FindOne(string remoteFileName)
+        public Task<MongoGridFSFileInfo> FindOneAsync(string remoteFileName)
         {
-            return FindOne(remoteFileName, -1); // most recent version
+            return FindOneAsync(remoteFileName, -1); // most recent version
         }
 
         /// <summary>
@@ -739,9 +740,9 @@ namespace MongoDB.Driver.GridFS
         /// <param name="remoteFileName">The remote file name.</param>
         /// <param name="version">The version to find.</param>
         /// <returns>The matching GridFS file.</returns>
-        public MongoGridFSFileInfo FindOne(string remoteFileName, int version)
+        public Task<MongoGridFSFileInfo> FindOneAsync(string remoteFileName, int version)
         {
-            return FindOne(Query.EQ("filename", remoteFileName), version);
+            return FindOneAsync(Query.EQ("filename", remoteFileName), version);
         }
 
         /// <summary>
@@ -749,9 +750,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="id">The GridFS file Id.</param>
         /// <returns>The GridFS file.</returns>
-        public MongoGridFSFileInfo FindOneById(BsonValue id)
+        public Task<MongoGridFSFileInfo> FindOneByIdAsync(BsonValue id)
         {
-            return FindOne(Query.EQ("_id", id));
+            return FindOneAsync(Query.EQ("_id", id));
         }
 
         /// <summary>
@@ -759,21 +760,21 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="sourceFileName">The source file name.</param>
         /// <param name="destFileName">The destination file name.</param>
-        public void MoveTo(string sourceFileName, string destFileName)
+        public async Task MoveToAsync(string sourceFileName, string destFileName)
         {
             if (_settings.ReadPreference != ReadPreference.Primary)
             {
                 var gridFS = WithReadPreferencePrimary();
-                gridFS.MoveTo(sourceFileName, destFileName);
+                await gridFS.MoveToAsync(sourceFileName, destFileName).ConfigureAwait(false);
                 return;
             }
-            var fileInfo = FindOne(sourceFileName);
+            var fileInfo = await FindOneAsync(sourceFileName).ConfigureAwait(false);
             if (fileInfo == null)
             {
                 var message = string.Format("GridFS file '{0}' not found.", sourceFileName);
                 throw new FileNotFoundException(message);
             }
-            fileInfo.MoveTo(destFileName);
+            await fileInfo.MoveToAsync(destFileName).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -784,7 +785,7 @@ namespace MongoDB.Driver.GridFS
         /// <returns>A stream.</returns>
         public MongoGridFSStream Open(string remoteFileName, FileMode mode)
         {
-            using (_server.RequestStart(null, DetermineReadPreference(mode)))
+            using (_server.RequestStartAsync(null, DetermineReadPreference(mode)))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -801,7 +802,7 @@ namespace MongoDB.Driver.GridFS
         /// <returns>A stream.</returns>
         public MongoGridFSStream Open(string remoteFileName, FileMode mode, FileAccess access)
         {
-            using (_server.RequestStart(null, DetermineReadPreference(mode, access)))
+            using (_server.RequestStartAsync(null, DetermineReadPreference(mode, access)))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -823,7 +824,7 @@ namespace MongoDB.Driver.GridFS
             FileAccess access,
             MongoGridFSCreateOptions createOptions)
         {
-            using (_server.RequestStart(null, DetermineReadPreference(mode, access)))
+            using (_server.RequestStartAsync(null, DetermineReadPreference(mode, access)))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName, createOptions);
@@ -838,7 +839,7 @@ namespace MongoDB.Driver.GridFS
         /// <returns>A stream.</returns>
         public MongoGridFSStream OpenRead(string remoteFileName)
         {
-            using (_server.RequestStart(null, _settings.ReadPreference))
+            using (_server.RequestStartAsync(null, _settings.ReadPreference))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -853,7 +854,7 @@ namespace MongoDB.Driver.GridFS
         /// <returns>A stream reader.</returns>
         public StreamReader OpenText(string remoteFileName)
         {
-            using (_server.RequestStart(null, _settings.ReadPreference))
+            using (_server.RequestStartAsync(null, _settings.ReadPreference))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -873,7 +874,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.OpenWrite(remoteFileName);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName);
@@ -894,7 +895,7 @@ namespace MongoDB.Driver.GridFS
                 var gridFS = WithReadPreferencePrimary();
                 return gridFS.OpenWrite(remoteFileName, createOptions);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
                 var serverInstance = _server.RequestConnection.ServerInstance;
                 var fileInfo = new MongoGridFSFileInfo(_server, serverInstance, _databaseName, _settings, remoteFileName, createOptions);
@@ -907,13 +908,13 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="fileInfo">The GridFS file.</param>
         /// <param name="aliases">The aliases.</param>
-        public void SetAliases(MongoGridFSFileInfo fileInfo, string[] aliases)
+        public Task SetAliasesAsync(MongoGridFSFileInfo fileInfo, string[] aliases)
         {
             var database = GetDatabase(ReadPreference.Primary);
             var filesCollection = GetFilesCollection(database);
             var query = Query.EQ("_id", fileInfo.Id);
             var update = (aliases == null) ? Update.Unset("aliases") : Update.Set("aliases", new BsonArray(aliases));
-            filesCollection.Update(query, update, _settings.WriteConcern);
+            return filesCollection.UpdateAsync(query, update, _settings.WriteConcern);
         }
 
         /// <summary>
@@ -921,13 +922,13 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="fileInfo">The GridFS file.</param>
         /// <param name="contentType">The content type.</param>
-        public void SetContentType(MongoGridFSFileInfo fileInfo, string contentType)
+        public Task SetContentTypeAsync(MongoGridFSFileInfo fileInfo, string contentType)
         {
             var database = GetDatabase(ReadPreference.Primary);
             var filesCollection = GetFilesCollection(database);
             var query = Query.EQ("_id", fileInfo.Id);
             var update = (contentType == null) ? Update.Unset("contentType") : Update.Set("contentType", contentType);
-            filesCollection.Update(query, update, _settings.WriteConcern);
+            return filesCollection.UpdateAsync(query, update, _settings.WriteConcern);
         }
 
         /// <summary>
@@ -935,13 +936,13 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="fileInfo">The GridFS file.</param>
         /// <param name="metadata">The metadata.</param>
-        public void SetMetadata(MongoGridFSFileInfo fileInfo, BsonValue metadata)
+        public Task SetMetadataAsync(MongoGridFSFileInfo fileInfo, BsonValue metadata)
         {
             var database = GetDatabase(ReadPreference.Primary);
             var filesCollection = GetFilesCollection(database);
             var query = Query.EQ("_id", fileInfo.Id);
             var update = (metadata == null) ? Update.Unset("metadata") : Update.Set("metadata", metadata);
-            filesCollection.Update(query, update, _settings.WriteConcern);
+            return filesCollection.UpdateAsync(query, update, _settings.WriteConcern);
         }
 
         /// <summary>
@@ -950,7 +951,7 @@ namespace MongoDB.Driver.GridFS
         /// <param name="stream">The source stream.</param>
         /// <param name="remoteFileName">The remote file name.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo Upload(Stream stream, string remoteFileName)
+        public async Task<MongoGridFSFileInfo> UploadAsync(Stream stream, string remoteFileName)
         {
             var options = new MongoGridFSCreateOptions
             {
@@ -958,7 +959,7 @@ namespace MongoDB.Driver.GridFS
                 Id = ObjectId.GenerateNewId(),
                 UploadDate = DateTime.UtcNow
             };
-            return Upload(stream, remoteFileName, options);
+            return await UploadAsync(stream, remoteFileName, options);
         }
 
         /// <summary>
@@ -968,7 +969,7 @@ namespace MongoDB.Driver.GridFS
         /// <param name="remoteFileName">The remote file name.</param>
         /// <param name="createOptions">The create options.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo Upload(
+        public async Task<MongoGridFSFileInfo> UploadAsync(
             Stream stream,
             string remoteFileName,
             MongoGridFSCreateOptions createOptions)
@@ -976,11 +977,11 @@ namespace MongoDB.Driver.GridFS
             if (_settings.ReadPreference != ReadPreference.Primary)
             {
                 var gridFS = WithReadPreferencePrimary();
-                return gridFS.Upload(stream, remoteFileName, createOptions);
+                return await gridFS.UploadAsync(stream, remoteFileName, createOptions);
             }
-            using (_server.RequestStart(null, ReadPreference.Primary))
+            using (_server.RequestStartAsync(null, ReadPreference.Primary))
             {
-                EnsureIndexes();
+                await EnsureIndexesAsync();
 
                 var database = GetDatabase(ReadPreference.Primary);
                 var chunksCollection = GetChunksCollection(database);
@@ -1029,7 +1030,7 @@ namespace MongoDB.Driver.GridFS
                             { "n", (n < int.MaxValue) ? (BsonValue)new BsonInt32((int)n) : new BsonInt64(n) },
                             { "data", new BsonBinaryData(data) }
                         };
-                        chunksCollection.Insert(chunk, _settings.WriteConcern);
+                        await chunksCollection.InsertAsync(chunk, _settings.WriteConcern);
 
                         if (_settings.VerifyMD5)
                         {
@@ -1057,7 +1058,7 @@ namespace MongoDB.Driver.GridFS
                         { "filemd5", files_id },
                         { "root", _settings.Root }
                     };
-                    var md5Result = database.RunCommand(md5Command);
+                    var md5Result = await database.RunCommandAsync(md5Command).ConfigureAwait(false);
                     md5Server = md5Result.Response["md5"].AsString;
                 }
 
@@ -1080,9 +1081,9 @@ namespace MongoDB.Driver.GridFS
                     { "aliases", aliases, aliases != null }, // optional
                     { "metadata", createOptions.Metadata, createOptions.Metadata != null } // optional
                 };
-                filesCollection.Insert(fileInfo, _settings.WriteConcern);
+                await filesCollection.InsertAsync(fileInfo, _settings.WriteConcern);
 
-                return FindOneById(files_id);
+                return await FindOneByIdAsync(files_id).ConfigureAwait(false);
             }
         }
 
@@ -1091,9 +1092,9 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="fileName">The file name (same local and remote names).</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo Upload(string fileName)
+        public Task<MongoGridFSFileInfo> UploadAsync(string fileName)
         {
-            return Upload(fileName, fileName);
+            return UploadAsync(fileName, fileName);
         }
 
         /// <summary>
@@ -1102,11 +1103,11 @@ namespace MongoDB.Driver.GridFS
         /// <param name="localFileName">The local file name.</param>
         /// <param name="remoteFileName">The remote file name.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo Upload(string localFileName, string remoteFileName)
+        public Task<MongoGridFSFileInfo> UploadAsync(string localFileName, string remoteFileName)
         {
             using (Stream stream = File.OpenRead(localFileName))
             {
-                return Upload(stream, remoteFileName);
+                return UploadAsync(stream, remoteFileName);
             }
         }
 

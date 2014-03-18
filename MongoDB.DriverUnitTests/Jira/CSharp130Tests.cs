@@ -55,7 +55,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp130
                 var c = new C { List = new List<int>() };
 
                 // insert it once
-                _collection.Insert(c);
+                _collection.InsertAsync(c);
                 var lastError = _server.GetLastError();
                 Assert.AreEqual(0, lastError.DocumentsAffected);
                 Assert.IsFalse(lastError.HasLastErrorMessage);
@@ -63,7 +63,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp130
                 Assert.IsFalse(lastError.UpdatedExisting);
 
                 // insert it again (expect duplicate key error, but no exception because WriteConcern = WriteConcern.Unacknowledged)
-                _collection.Insert(c);
+                _collection.InsertAsync(c);
                 lastError = _server.GetLastError();
                 Assert.AreEqual(0, lastError.DocumentsAffected);
                 Assert.IsTrue(lastError.HasLastErrorMessage);

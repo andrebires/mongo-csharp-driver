@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -25,7 +26,7 @@ namespace MongoDB.Driver
     /// Reprsents an enumerator that fetches the results of a query sent to the server.
     /// </summary>
     /// <typeparam name="TDocument">The type of the documents returned.</typeparam>
-    public class MongoCursorEnumerator<TDocument> : IEnumerator<TDocument>
+    public class MongoCursorEnumerator<TDocument> : IEnumeratorAsync<TDocument>
     {
         // private fields
         private readonly MongoCursor<TDocument> _cursor;
@@ -119,7 +120,7 @@ namespace MongoDB.Driver
             {
                 try
                 {
-                    KillCursor();
+                    KillCursorAsync().Wait();
                 }
                 finally
                 {
@@ -128,11 +129,20 @@ namespace MongoDB.Driver
             }
         }
 
-        /// <summary>
+                /// <summary>
         /// Moves to the next result and returns true if another result is available.
         /// </summary>
         /// <returns>True if another result is available.</returns>
         public bool MoveNext()
+        {
+            return MoveNextAsync().Result;
+        }
+
+        /// <summary>
+        /// Moves to the next result and returns true if another result is available.
+        /// </summary>
+        /// <returns>True if another result is available.</returns>
+        public async Task<bool> MoveNextAsync()
         {
             if (_disposed) { throw new ObjectDisposedException("MongoCursorEnumerator"); }
             if (_done)
@@ -152,7 +162,7 @@ namespace MongoDB.Driver
 
             if (!_started)
             {
-                _reply = GetFirst();
+                _reply = await GetFirstAsync().ConfigureAwait(false);
                 if (_reply.Documents.Count == 0)
                 {
                     _reply = null;
@@ -165,7 +175,7 @@ namespace MongoDB.Driver
 
             if (_positiveLimit != 0 && _count == _positiveLimit)
             {
-                KillCursor(); // early exit
+                await KillCursorAsync().ConfigureAwait(false); // early exit
                 _reply = null;
                 _done = true;
                 return false;
@@ -180,7 +190,7 @@ namespace MongoDB.Driver
             {
                 if (_openCursorId != 0)
                 {
-                    _reply = GetMore();
+                    _reply = await GetMoreAsync().ConfigureAwait(false);
                     if (_reply.Documents.Count == 0)
                     {
                         _reply = null;
@@ -216,12 +226,12 @@ namespace MongoDB.Driver
         }
 
         // private methods
-        private MongoConnection AcquireConnection()
+        private async Task<MongoConnection> AcquireConnectionAsync()
         {
             if (_serverInstance == null)
             {
                 // first time we need a connection let Server.AcquireConnection pick the server instance
-                var connection = _cursor.Server.AcquireConnection(_readPreference);
+                var connection = await _cursor.Server.AcquireConnectionAsync(_readPreference).ConfigureAwait(false);
                 _serverInstance = connection.ServerInstance;
                 return connection;
             }
@@ -232,9 +242,9 @@ namespace MongoDB.Driver
             }
         }
 
-        private MongoReplyMessage<TDocument> GetFirst()
+        private async Task<MongoReplyMessage<TDocument>> GetFirstAsync()
         {
-            var connection = AcquireConnection();
+            var connection = await AcquireConnectionAsync().ConfigureAwait(false);
             try
             {
                 var maxDocumentSize = connection.ServerInstance.MaxDocumentSize;
@@ -265,7 +275,7 @@ namespace MongoDB.Driver
 
                 var writerSettings = _cursor.Collection.GetWriterSettings(connection);
                 var queryMessage = new MongoQueryMessage(writerSettings, _cursor.Collection.FullName, _queryFlags, maxDocumentSize, _cursor.Skip, numberToReturn, WrapQuery(), _cursor.Fields);
-                return GetReply(connection, queryMessage);
+                return await GetReplyAsync(connection, queryMessage).ConfigureAwait(false);
             }
             finally
             {
@@ -273,9 +283,9 @@ namespace MongoDB.Driver
             }
         }
 
-        private MongoReplyMessage<TDocument> GetMore()
+        private async Task<MongoReplyMessage<TDocument>> GetMoreAsync()
         {
-            var connection = AcquireConnection();
+            var connection = await AcquireConnectionAsync().ConfigureAwait(false);
             try
             {
                 int numberToReturn;
@@ -293,7 +303,7 @@ namespace MongoDB.Driver
                 }
 
                 var getMoreMessage = new MongoGetMoreMessage(_cursor.Collection.FullName, numberToReturn, _openCursorId);
-                return GetReply(connection, getMoreMessage);
+                return await GetReplyAsync(connection, getMoreMessage).ConfigureAwait(false);
             }
             finally
             {
@@ -301,17 +311,17 @@ namespace MongoDB.Driver
             }
         }
 
-        private MongoReplyMessage<TDocument> GetReply(MongoConnection connection, MongoRequestMessage message)
+        private async Task<MongoReplyMessage<TDocument>> GetReplyAsync(MongoConnection connection, MongoRequestMessage message)
         {
             var readerSettings = _cursor.Collection.GetReaderSettings(connection);
-            connection.SendMessage(message);
-            var reply = connection.ReceiveMessage<TDocument>(readerSettings, _cursor.Serializer, _cursor.SerializationOptions);
+            await connection.SendMessageAsync(message).ConfigureAwait(false);
+            var reply = await connection.ReceiveMessageAsync<TDocument>(readerSettings, _cursor.Serializer, _cursor.SerializationOptions).ConfigureAwait(false);
             _responseFlags = reply.ResponseFlags;
             _openCursorId = reply.CursorId;
             return reply;
         }
 
-        private void KillCursor()
+        private async Task KillCursorAsync()
         {
             if (_openCursorId != 0)
             {
@@ -323,7 +333,7 @@ namespace MongoDB.Driver
                         try
                         {
                             var killCursorsMessage = new MongoKillCursorsMessage(_openCursorId);
-                            connection.SendMessage(killCursorsMessage);
+                            await connection.SendMessageAsync(killCursorsMessage).ConfigureAwait(false);
                         }
                         finally
                         {

@@ -350,7 +350,7 @@ namespace MongoDB.Driver.Linq
             }
 
             var dottedElementName = serializationInfo.ElementName;
-            var source = Collection.Distinct(dottedElementName, query);
+            var source = Collection.DistinctAsync(dottedElementName, query);
 
             var deserializationProjectorGenericDefinition = typeof(DeserializationProjector<>);
             var deserializationProjectorType = deserializationProjectorGenericDefinition.MakeGenericType(keyExpression.Type);
@@ -411,7 +411,7 @@ namespace MongoDB.Driver.Linq
             _projection = null;
 
             // note: recall that cursor method Size respects Skip and Limit while Count does not
-            SetElementSelector(methodCallExpression, source => ((int)((IProjector)source).Cursor.Size()) > 0);
+            SetElementSelector(methodCallExpression, source => ((int)((IProjector)source).Cursor.SizeAsync().Result) > 0);
         }
 
         private void TranslateCount(MethodCallExpression methodCallExpression)
@@ -436,10 +436,10 @@ namespace MongoDB.Driver.Linq
             switch (methodCallExpression.Method.Name)
             {
                 case "Count":
-                    SetElementSelector(methodCallExpression, source => (int)((IProjector)source).Cursor.Size());
+                    SetElementSelector(methodCallExpression, source => (int)((IProjector)source).Cursor.SizeAsync().Result);
                     break;
                 case "LongCount":
-                    SetElementSelector(methodCallExpression, source => ((IProjector)source).Cursor.Size());
+                    SetElementSelector(methodCallExpression, source => ((IProjector)source).Cursor.SizeAsync());
                     break;
             }
         }

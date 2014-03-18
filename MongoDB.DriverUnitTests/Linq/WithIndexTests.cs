@@ -46,13 +46,13 @@ namespace MongoDB.DriverUnitTests.Linq
             _collection = Configuration.GetTestCollection<B>();
 
             _collection.Drop();
-            _collection.CreateIndex(new IndexKeysBuilder().Ascending("a", "b"), IndexOptions.SetName("i"));
-            _collection.CreateIndex(new IndexKeysBuilder().Ascending("a", "b"), IndexOptions.SetName("i"));
+            _collection.CreateIndexAsyncAsync(new IndexKeysBuilder().Ascending("a", "b"), IndexOptions.SetName("i"));
+            _collection.CreateIndexAsyncAsync(new IndexKeysBuilder().Ascending("a", "b"), IndexOptions.SetName("i"));
 
-            _collection.Insert(new B { Id = ObjectId.GenerateNewId(), a = 1, b = 10, c = 100 });
-            _collection.Insert(new B { Id = ObjectId.GenerateNewId(), a = 2, b = 20, c = 200 });
-            _collection.Insert(new B { Id = ObjectId.GenerateNewId(), a = 3, b = 30, c = 300 });
-            _collection.Insert(new B { Id = ObjectId.GenerateNewId(), a = 4, b = 40, c = 400 });
+            _collection.InsertAsyncAsync(new B { Id = ObjectId.GenerateNewId(), a = 1, b = 10, c = 100 });
+            _collection.InsertAsyncAsync(new B { Id = ObjectId.GenerateNewId(), a = 2, b = 20, c = 200 });
+            _collection.InsertAsyncAsync(new B { Id = ObjectId.GenerateNewId(), a = 3, b = 30, c = 300 });
+            _collection.InsertAsyncAsync(new B { Id = ObjectId.GenerateNewId(), a = 4, b = 40, c = 400 });
         }
 
         [Test]

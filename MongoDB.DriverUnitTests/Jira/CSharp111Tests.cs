@@ -44,22 +44,22 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp111
             var database = Configuration.TestDatabase;
             var collection = Configuration.GetTestCollection<C>();
 
-            collection.RemoveAll();
+            collection.RemoveAllAsync();
             var c = new C { InnerObjects = new List<D>() };
-            collection.Insert(c);
+            collection.InsertAsyncAsync(c);
             var id = c.Id;
 
             var query = Query.EQ("_id", id);
             var update = Update.AddToSet("InnerObjects", 1);
-            collection.Update(query, update);
+            collection.UpdateAsync(query, update);
             var d1 = new D { X = 1 };
             update = Update.AddToSetWrapped("InnerObjects", d1);
-            collection.Update(query, update);
+            collection.UpdateAsync(query, update);
 
             var d2 = new D { X = 2 };
             var d3 = new D { X = 3 };
             update = Update.AddToSetEachWrapped("InnerObjects", d1, d2, d3);
-            collection.Update(query, update);
+            collection.UpdateAsync(query, update);
 
             var document = collection.FindOneAs<BsonDocument>();
             var json = document.ToJson();

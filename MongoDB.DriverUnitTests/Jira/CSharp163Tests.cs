@@ -39,8 +39,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp163
         [Test]
         public void TestNullAliasesAndContentType()
         {
-            _database.GridFS.Files.RemoveAll();
-            _database.GridFS.Chunks.RemoveAll();
+            _database.GridFS.Files.RemoveAllAsync();
+            _database.GridFS.Chunks.RemoveAllAsync();
 
             var text = "Hello World";
             var bytes = Encoding.UTF8.GetBytes(text);
@@ -64,7 +64,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp163
                 .Set("contentType", BsonNull.Value)
                 .Set("filename", BsonNull.Value)
                 .Set("metadata", BsonNull.Value);
-            _database.GridFS.Files.Update(query, update);
+            _database.GridFS.Files.UpdateAsync(query, update);
 
             var fileInfo2 = _database.GridFS.FindOne(query);
             Assert.IsNull(fileInfo2.Aliases);

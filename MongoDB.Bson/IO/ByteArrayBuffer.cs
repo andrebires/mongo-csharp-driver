@@ -15,6 +15,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -455,10 +456,10 @@ namespace MongoDB.Bson.IO
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <exception cref="System.ObjectDisposedException">ByteArrayBuffer</exception>
-        public void WriteTo(Stream stream)
+        public Task WriteToAsync(Stream stream)
         {
             ThrowIfDisposed();
-            stream.Write(_bytes, _sliceOffset, _length);
+            return stream.WriteAsync(_bytes, _sliceOffset, _length);
         }
 
         // protected methods

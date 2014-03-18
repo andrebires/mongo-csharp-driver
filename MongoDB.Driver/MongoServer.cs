@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Driver.Internal;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -521,7 +522,7 @@ namespace MongoDB.Driver
         /// <param name="timeout">How long to wait before timing out.</param>
         public virtual void Connect(TimeSpan timeout)
         {
-            _serverProxy.Connect(timeout, _settings.ReadPreference);
+            _serverProxy.ConnectAsync(timeout, _settings.ReadPreference);
         }
 
         // TODO: fromHost parameter?
@@ -557,9 +558,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="databaseName">The name of the database.</param>
         /// <returns>True if the database exists.</returns>
-        public virtual bool DatabaseExists(string databaseName)
+        public virtual async Task<bool> DatabaseExistsAsync(string databaseName)
         {
-            var databaseNames = GetDatabaseNames();
+            var databaseNames = await GetDatabaseNamesAsync().ConfigureAwait(false);
             return databaseNames.Contains(databaseName);
         }
 
@@ -577,11 +578,11 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="databaseName">The name of the database to be dropped.</param>
         /// <returns>A <see cref="CommandResult"/>.</returns>
-        public virtual CommandResult DropDatabase(string databaseName)
+        public virtual async Task<CommandResult> DropDatabaseAsync(string databaseName)
         {
             var database = GetDatabase(databaseName);
             var command = new CommandDocument("dropDatabase", 1);
-            var result = database.RunCommand(command);
+            var result = await database.RunCommandAsync(command);
             return result;
         }
 
@@ -688,10 +689,10 @@ namespace MongoDB.Driver
         /// Gets the names of the databases on this server.
         /// </summary>
         /// <returns>A list of database names.</returns>
-        public virtual IEnumerable<string> GetDatabaseNames()
+        public virtual async Task<IEnumerable<string>> GetDatabaseNamesAsync()
         {
             var adminDatabase = GetDatabase("admin");
-            var result = adminDatabase.RunCommand("listDatabases");
+            var result = await adminDatabase.RunCommandAsync("listDatabases").ConfigureAwait(false);
             var databaseNames = new List<string>();
             foreach (BsonDocument database in result.Response["databases"].AsBsonArray.Values)
             {
@@ -706,10 +707,10 @@ namespace MongoDB.Driver
         /// Gets the last error (if any) that occurred on this connection. You MUST be within a RequestStart to call this method.
         /// </summary>
         /// <returns>The last error (<see cref=" GetLastErrorResult"/>)</returns>
-        public virtual GetLastErrorResult GetLastError()
+        public virtual Task<GetLastErrorResult> GetLastErrorAsync()
         {
             var adminDatabase = GetDatabase("admin");
-            return adminDatabase.GetLastError();
+            return adminDatabase.GetLastErrorAsync();
         }
 
         /// <summary>
@@ -757,7 +758,7 @@ namespace MongoDB.Driver
         /// </summary>
         public virtual void Ping()
         {
-            _serverProxy.Ping();
+            _serverProxy.PingAsync();
         }
 
         /// <summary>
@@ -815,7 +816,7 @@ namespace MongoDB.Driver
         /// <returns>A helper object that implements IDisposable and calls <see cref="RequestDone"/> from the Dispose method.</returns>
         public virtual IDisposable RequestStart(MongoDatabase initialDatabase)
         {
-            return RequestStart(initialDatabase, ReadPreference.Primary);
+            return RequestStartAsync(initialDatabase, ReadPreference.Primary);
         }
 
         /// <summary>
@@ -830,7 +831,7 @@ namespace MongoDB.Driver
         public virtual IDisposable RequestStart(MongoDatabase initialDatabase, bool slaveOk)
         {
             var readPreference = ReadPreference.FromSlaveOk(slaveOk);
-            return RequestStart(initialDatabase, readPreference);
+            return RequestStartAsync(initialDatabase, readPreference);
         }
 
         /// <summary>
@@ -841,7 +842,7 @@ namespace MongoDB.Driver
         /// <param name="initialDatabase">One of the databases involved in the related operations.</param>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>A helper object that implements IDisposable and calls <see cref="RequestDone"/> from the Dispose method.</returns>
-        public virtual IDisposable RequestStart(MongoDatabase initialDatabase, ReadPreference readPreference)
+        public virtual async Task<IDisposable> RequestStartAsync(MongoDatabase initialDatabase, ReadPreference readPreference)
         {
             int threadId = Thread.CurrentThread.ManagedThreadId;
 
@@ -860,7 +861,7 @@ namespace MongoDB.Driver
 
             }
 
-            var serverInstance = _serverProxy.ChooseServerInstance(readPreference);
+            var serverInstance = await _serverProxy.ChooseServerInstanceAsync(readPreference).ConfigureAwait(false);
             var connection = serverInstance.AcquireConnection();
 
             lock (_serverLock)
@@ -917,7 +918,7 @@ namespace MongoDB.Driver
                 try
                 {
                     var adminDatabase = GetDatabase("admin");
-                    adminDatabase.RunCommand("shutdown");
+                    adminDatabase.RunCommandAsync("shutdown");
                 }
                 catch (EndOfStreamException)
                 {
@@ -929,13 +930,13 @@ namespace MongoDB.Driver
         /// <summary>
         /// Verifies the state of the server (in the case of a replica set all members are contacted one at a time).
         /// </summary>
-        public virtual void VerifyState()
+        public virtual Task VerifyStateAsync()
         {
-            _serverProxy.VerifyState();
+            return _serverProxy.VerifyStateAsync();
         }
 
         // internal methods
-        internal MongoConnection AcquireConnection(ReadPreference readPreference)
+        internal async Task<MongoConnection> AcquireConnectionAsync(ReadPreference readPreference)
         {
             MongoConnection requestConnection = null;
             lock (_serverLock)
@@ -959,7 +960,7 @@ namespace MongoDB.Driver
                 return requestConnection;
             }
 
-            var serverInstance = _serverProxy.ChooseServerInstance(readPreference);
+            var serverInstance = await _serverProxy.ChooseServerInstanceAsync(readPreference).ConfigureAwait(false);
             return serverInstance.AcquireConnection();
         }
 

@@ -58,8 +58,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp355
             }
             var bitmap = new Bitmap(1, 2);
             var c = new C { I = bitmap, B = bitmap };
-            _collection.RemoveAll();
-            _collection.Insert(c);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(c);
             var r = _collection.FindOne();
             Assert.IsInstanceOf<C>(r);
             Assert.IsInstanceOf<Bitmap>(r.I);
@@ -80,8 +80,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp355
             }
             var bitmap = GetTestBitmap();
             var c = new C { I = bitmap, B = bitmap };
-            _collection.RemoveAll();
-            _collection.Insert(c);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(c);
             var r = _collection.FindOne();
             Assert.IsInstanceOf<C>(r);
             Assert.IsInstanceOf<Bitmap>(r.I);
@@ -94,8 +94,8 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp355
         public void TestImageNull()
         {
             var c = new C { I = null, B = null };
-            _collection.RemoveAll();
-            _collection.Insert(c);
+            _collection.RemoveAllAsync();
+            _collection.InsertAsyncAsync(c);
             var r = _collection.FindOne();
             Assert.IsInstanceOf<C>(r);
             Assert.IsNull(r.I);

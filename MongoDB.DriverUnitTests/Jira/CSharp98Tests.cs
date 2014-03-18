@@ -42,11 +42,11 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp98
             var database = Configuration.TestDatabase;
             var collection = Configuration.GetTestCollection<A>();
 
-            collection.RemoveAll();
+            collection.RemoveAllAsync();
             var b1 = new B { PA = 1, PB = 2 };
             var b2 = new B { PA = 3, PB = 4 };
-            collection.Insert<A>(b1);
-            collection.Insert<A>(b2);
+            collection.InsertAsync<A>(b1);
+            collection.InsertAsync<A>(b2);
 
             var docs = collection.FindAll().ToList();
         }

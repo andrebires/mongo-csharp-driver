@@ -50,21 +50,21 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp253
                 DBRef = new MongoDBRef("database", "collection", ObjectId.GenerateNewId()),
                 BsonNull = null
             };
-            _collection.Insert(c);
+            _collection.InsertAsyncAsyncAsync(c);
         }
 
         [Test]
         public void TestInsertDollar()
         {
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(new BsonDocument("$x", 1)); });
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(new BsonDocument("x", new BsonDocument("$x", 1))); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsync(new BsonDocument("$x", 1)); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsync(new BsonDocument("x", new BsonDocument("$x", 1))); });
         }
 
         [Test]
         public void TestInsertPeriod()
         {
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(new BsonDocument("a.b", 1)); });
-            Assert.Throws<BsonSerializationException>(() => { _collection.Insert(new BsonDocument("a", new BsonDocument("b.c", 1))); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsync(new BsonDocument("a.b", 1)); });
+            Assert.Throws<BsonSerializationException>(() => { _collection.InsertAsyncAsync(new BsonDocument("a", new BsonDocument("b.c", 1))); });
         }
 
         [Test]
@@ -93,13 +93,13 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp253
                     { "$scope", "scope" }
                 };
             }
-            _collection.Insert(document);
+            _collection.InsertAsyncAsync(document);
         }
 
         [Test]
         public void TestCreateIndexOnNestedElement()
         {
-            _collection.CreateIndex("a.b");
+            _collection.CreateIndexAsync("a.b");
         }
     }
 }

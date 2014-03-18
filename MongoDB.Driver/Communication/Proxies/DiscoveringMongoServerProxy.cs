@@ -16,6 +16,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Internal
 {
@@ -24,7 +26,9 @@ namespace MongoDB.Driver.Internal
     /// </summary>
     internal sealed class DiscoveringMongoServerProxy : IMongoServerProxy
     {
-        private readonly object _lock = new object();
+        //private readonly object _lock = new object();
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+
         private readonly MongoServerSettings _settings;
         private readonly ReadOnlyCollection<MongoServerInstance> _instances;
 
@@ -157,10 +161,10 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>A MongoServerInstance</returns>
-        public MongoServerInstance ChooseServerInstance(ReadPreference readPreference)
+        public async Task<MongoServerInstance> ChooseServerInstanceAsync(ReadPreference readPreference)
         {
-            EnsureInstanceManager(_settings.ConnectTimeout);
-            return _serverProxy.ChooseServerInstance(readPreference);
+            await EnsureInstanceManagerAsync(_settings.ConnectTimeout).ConfigureAwait(false);
+            return await _serverProxy.ChooseServerInstanceAsync(readPreference).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -168,18 +172,18 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="timeout">The timeout.</param>
         /// <param name="readPreference">The read preference.</param>
-        public void Connect(TimeSpan timeout, ReadPreference readPreference)
+        public async Task ConnectAsync(TimeSpan timeout, ReadPreference readPreference)
         {
             try
             {
-                EnsureInstanceManager(timeout);
+                await EnsureInstanceManagerAsync(timeout).ConfigureAwait(false);
             }
             catch
             {
                 _state = MongoServerState.Disconnected;
                 throw;
             }
-            _serverProxy.Connect(timeout, readPreference);
+            await _serverProxy.ConnectAsync(timeout, readPreference).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -196,53 +200,60 @@ namespace MongoDB.Driver.Internal
         /// <summary>
         /// Pings this instance.
         /// </summary>
-        public void Ping()
+        public async Task PingAsync()
         {
             if (_serverProxy == null)
             {
                 foreach (var instance in _instances)
                 {
-                    instance.Ping();
+                    await instance.PingAsync();
                 }
             }
             else
             {
-                _serverProxy.Ping();
+                await _serverProxy.PingAsync();
             }
         }
 
         /// <summary>
         /// Verifies the state.
         /// </summary>
-        public void VerifyState()
+        public Task VerifyStateAsync()
         {
             // if we have never connected, then our state is correct...
             if (_serverProxy == null)
             {
-                return;
+                return Task.FromResult(0);
             }
 
-            _serverProxy.VerifyState();
+            return _serverProxy.VerifyStateAsync();
         }
 
         // private methods
-        private void EnsureInstanceManager(TimeSpan timeout)
+        private async Task EnsureInstanceManagerAsync(TimeSpan timeout)
         {
             if (_serverProxy == null)
             {
-                lock (_lock)
+
+                //lock (_lock)
+                await _semaphore.WaitAsync();
+                try
                 {
                     if (_serverProxy == null)
                     {
                         _connectionAttempt++;
                         _state = MongoServerState.Connecting;
-                        Discover(timeout);
+                        await DiscoverAsync(timeout);
                     }
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
         }
 
-        private void Discover(TimeSpan timeout)
+        private Task DiscoverAsync(TimeSpan timeout)
         {
             var connectionQueue = new BlockingQueue<MongoServerInstance>();
 
@@ -253,7 +264,7 @@ namespace MongoDB.Driver.Internal
                 {
                     try
                     {
-                        local.Connect();
+                        local.ConnectAsync().Wait();
                     }
                     catch
                     {
@@ -271,7 +282,7 @@ namespace MongoDB.Driver.Internal
                 if (instance.ConnectException == null)
                 {
                     CreateActualProxy(instance, connectionQueue);
-                    return;
+                    return Task.FromResult(0);
                 }
 
                 timeRemaining = timeoutAt - DateTime.UtcNow;
@@ -282,7 +293,9 @@ namespace MongoDB.Driver.Internal
 
         private void CreateActualProxy(MongoServerInstance instance, BlockingQueue<MongoServerInstance> connectionQueue)
         {
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 if (instance.InstanceType == MongoServerInstanceType.ReplicaSetMember)
                 {
@@ -306,6 +319,10 @@ namespace MongoDB.Driver.Internal
                 {
                     throw new MongoConnectionException("The type of servers in the host list could not be determined.");
                 }
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
     }

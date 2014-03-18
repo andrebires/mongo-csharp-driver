@@ -30,6 +30,7 @@ using MongoDB.Driver.GeoJsonObjectModel.Serializers;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
 using MongoDB.Driver.Wrappers;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -120,7 +121,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A sequence of documents.</returns>
-        public virtual IEnumerable<BsonDocument> Aggregate(AggregateArgs args)
+        public virtual async Task<IEnumerable<BsonDocument>> AggregateAsync(AggregateArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.Pipeline == null) { throw new ArgumentException("Pipeline is null.", "args"); }
@@ -131,7 +132,7 @@ namespace MongoDB.Driver
             if (lastStage != null && lastStage.GetElement(0).Name == "$out")
             {
                 outputCollectionName = lastStage["$out"].AsString;
-                RunAggregateCommand(args);
+                await RunAggregateCommandAsync(args).ConfigureAwait(false);
             }
 
             return new AggregateEnumerableResult(this, args, outputCollectionName);
@@ -145,10 +146,10 @@ namespace MongoDB.Driver
         /// An AggregateResult.
         /// </returns>
         [Obsolete("Use the overload with an AggregateArgs parameter.")]
-        public virtual AggregateResult Aggregate(IEnumerable<BsonDocument> pipeline)
+        public virtual Task<AggregateResult> AggregateAsync(IEnumerable<BsonDocument> pipeline)
         {
             var args = new AggregateArgs { Pipeline = pipeline, OutputMode = AggregateOutputMode.Inline };
-            return RunAggregateCommand(args);
+            return RunAggregateCommandAsync(args);
         }
 
         /// <summary>
@@ -157,10 +158,10 @@ namespace MongoDB.Driver
         /// <param name="pipeline">The pipeline operations.</param>
         /// <returns>An AggregateResult.</returns>
         [Obsolete("Use the overload with an AggregateArgs parameter.")]
-        public virtual AggregateResult Aggregate(params BsonDocument[] pipeline)
+        public virtual Task<AggregateResult> AggregateAsync(params BsonDocument[] pipeline)
         {
             var args = new AggregateArgs { Pipeline = pipeline, OutputMode = AggregateOutputMode.Inline };
-            return RunAggregateCommand(args);
+            return RunAggregateCommandAsync(args);
         }
 
         /// <summary>
@@ -168,7 +169,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>The explain result.</returns>
-        public virtual CommandResult AggregateExplain(AggregateArgs args)
+        public virtual Task<CommandResult> AggregateExplainAsync(AggregateArgs args)
         {
             var aggregateCommand = new CommandDocument
             {
@@ -178,7 +179,7 @@ namespace MongoDB.Driver
                 { "explain", true }
             };
 
-            return RunCommandAs<CommandResult>(aggregateCommand);
+            return RunCommandAsAsync<CommandResult>(aggregateCommand);
         }
 
         /// <summary>
@@ -188,7 +189,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A BulkWriteResult.
         /// </returns>
-        internal virtual BulkWriteResult BulkWrite(BulkWriteArgs args)
+        internal virtual async Task<BulkWriteResult> BulkWriteAsync(BulkWriteArgs args)
         {
             if (args == null)
             {
@@ -199,7 +200,7 @@ namespace MongoDB.Driver
                 throw new ArgumentNullException("args.Requests");
             }
 
-            var connection = _server.AcquireConnection(ReadPreference.Primary);
+            var connection = await _server.AcquireConnectionAsync(ReadPreference.Primary).ConfigureAwait(false);
             try
             {
                 var assignId = args.AssignId ?? (_settings.AssignIdOnInsert ? (Action<InsertRequest>)AssignId : null);
@@ -225,7 +226,7 @@ namespace MongoDB.Driver
                     writeConcern,
                     GetBinaryWriterSettings());
 
-                return operation.Execute(connection);
+                return await operation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {
@@ -237,10 +238,10 @@ namespace MongoDB.Driver
         /// Counts the number of documents in this collection.
         /// </summary>
         /// <returns>The number of documents in this collection.</returns>
-        public virtual long Count()
+        public virtual Task<long> CountAsync()
         {
             var args = new CountArgs { Query = null };
-            return Count(args);
+            return CountAsync(args);
         }
 
         /// <summary>
@@ -250,7 +251,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// The number of documents in this collection that match the query.
         /// </returns>
-        public virtual long Count(CountArgs args)
+        public virtual async Task<long> CountAsync(CountArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
 
@@ -262,7 +263,7 @@ namespace MongoDB.Driver
                 { "skip", () => args.Skip.Value, args.Skip.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } //optional
             };
-            var result = RunCommandAs<CommandResult>(command);
+            var result = await RunCommandAsAsync<CommandResult>(command).ConfigureAwait(false);
             return result.Response["n"].ToInt64();
         }
 
@@ -271,10 +272,10 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <returns>The number of documents in this collection that match the query.</returns>
-        public virtual long Count(IMongoQuery query)
+        public virtual Task<long> CountAsync(IMongoQuery query)
         {
             var args = new CountArgs { Query = query };
-            return Count(args);
+            return CountAsync(args);
         }
 
         /// <summary>
@@ -283,7 +284,7 @@ namespace MongoDB.Driver
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         /// <param name="options">The index options(usually an IndexOptionsDocument or created using the IndexOption builder).</param>
         /// <returns>A WriteConcernResult.</returns>
-        public virtual WriteConcernResult CreateIndex(IMongoIndexKeys keys, IMongoIndexOptions options)
+        public virtual Task<WriteConcernResult> CreateIndexAsync(IMongoIndexKeys keys, IMongoIndexOptions options)
         {
             using (_database.RequestStart(ReadPreference.Primary))
             {
@@ -291,9 +292,9 @@ namespace MongoDB.Driver
                 {
                     try
                     {
-                        CreateIndexWithCommand(keys, options);
+                        CreateIndexWithCommandAsync(keys, options);
                         var fakeResponse = new BsonDocument { { "ok", 1 }, { "n", 0 } };
-                        return new WriteConcernResult(fakeResponse);
+                        return Task.FromResult(new WriteConcernResult(fakeResponse));
                     }
                     catch (MongoCommandException ex)
                     {
@@ -304,7 +305,7 @@ namespace MongoDB.Driver
                 }
                 else
                 {
-                    return CreateIndexWithInsert(keys, options);
+                    return CreateIndexWithInsertAsync(keys, options);
                 }
             }
         }
@@ -314,9 +315,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         /// <returns>A WriteConcernResult.</returns>
-        public virtual WriteConcernResult CreateIndex(IMongoIndexKeys keys)
+        public virtual Task<WriteConcernResult> CreateIndexAsync(IMongoIndexKeys keys)
         {
-            return CreateIndex(keys, IndexOptions.Null);
+            return CreateIndexAsync(keys, IndexOptions.Null);
         }
 
         /// <summary>
@@ -324,9 +325,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keyNames">The names of the indexed fields.</param>
         /// <returns>A WriteConcernResult.</returns>
-        public virtual WriteConcernResult CreateIndex(params string[] keyNames)
+        public virtual Task<WriteConcernResult> CreateIndexAsync(params string[] keyNames)
         {
-            return CreateIndex(IndexKeys.Ascending(keyNames));
+            return CreateIndexAsync(IndexKeys.Ascending(keyNames));
         }
 
         /// <summary>
@@ -334,7 +335,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>The distint values of the field.</returns>
-        public IEnumerable<TValue> Distinct<TValue>(DistinctArgs args)
+        public async Task<IEnumerable<TValue>> DistinctAsync<TValue>(DistinctArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.Key == null) { throw new ArgumentException("Key is null.", "args"); }
@@ -348,7 +349,7 @@ namespace MongoDB.Driver
             };
             var valueSerializer = args.ValueSerializer ?? BsonSerializer.LookupSerializer(typeof(TValue));
             var resultSerializer = new DistinctCommandResultSerializer<TValue>(valueSerializer, args.ValueSerializationOptions);
-            var result = RunCommandAs<DistinctCommandResult<TValue>>(command, resultSerializer, null);
+            var result = await RunCommandAsAsync<DistinctCommandResult<TValue>>(command, resultSerializer, null).ConfigureAwait(false);
             return result.Values;
         }
 
@@ -357,9 +358,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="key">The key of the field.</param>
         /// <returns>The distint values of the field.</returns>
-        public virtual IEnumerable<BsonValue> Distinct(string key)
+        public virtual Task<IEnumerable<BsonValue>> DistinctAsync(string key)
         {
-            return Distinct<BsonValue>(new DistinctArgs
+            return DistinctAsync<BsonValue>(new DistinctArgs
             {
                 Key = key,
                 ValueSerializer = BsonValueSerializer.Instance
@@ -372,9 +373,9 @@ namespace MongoDB.Driver
         /// <param name="key">The key of the field.</param>
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <returns>The distint values of the field.</returns>
-        public virtual IEnumerable<BsonValue> Distinct(string key, IMongoQuery query)
+        public virtual Task<IEnumerable<BsonValue>> DistinctAsync(string key, IMongoQuery query)
         {
-            return Distinct<BsonValue>(new DistinctArgs
+            return DistinctAsync<BsonValue>(new DistinctArgs
             {
                 Key = key,
                 Query = query,
@@ -388,9 +389,9 @@ namespace MongoDB.Driver
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="key">The key of the field.</param>
         /// <returns>The distint values of the field.</returns>
-        public virtual IEnumerable<TValue> Distinct<TValue>(string key)
+        public virtual Task<IEnumerable<TValue>> DistinctAsync<TValue>(string key)
         {
-            return Distinct<TValue>(new DistinctArgs
+            return DistinctAsync<TValue>(new DistinctArgs
             {
                 Key = key
             });
@@ -403,9 +404,9 @@ namespace MongoDB.Driver
         /// <param name="key">The key of the field.</param>
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <returns>The distint values of the field.</returns>
-        public virtual IEnumerable<TValue> Distinct<TValue>(string key, IMongoQuery query)
+        public virtual Task<IEnumerable<TValue>> DistinctAsync<TValue>(string key, IMongoQuery query)
         {
-            return Distinct<TValue>(new DistinctArgs
+            return DistinctAsync<TValue>(new DistinctArgs
             {
                 Key = key,
                 Query = query
@@ -416,18 +417,18 @@ namespace MongoDB.Driver
         /// Drops this collection.
         /// </summary>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult Drop()
+        public virtual Task<CommandResult> DropAsync()
         {
-            return _database.DropCollection(_name);
+            return _database.DropCollectionAsync(_name);
         }
 
         /// <summary>
         /// Drops all indexes on this collection.
         /// </summary>
         /// <returns>A <see cref="CommandResult"/>.</returns>
-        public virtual CommandResult DropAllIndexes()
+        public virtual Task<CommandResult> DropAllIndexesAsync()
         {
-            return DropIndexByName("*");
+            return DropIndexByNameAsync("*");
         }
 
         /// <summary>
@@ -435,10 +436,10 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         /// <returns>A <see cref="CommandResult"/>.</returns>
-        public virtual CommandResult DropIndex(IMongoIndexKeys keys)
+        public virtual Task<CommandResult> DropIndexAsync(IMongoIndexKeys keys)
         {
             string indexName = GetIndexName(keys.ToBsonDocument(), null);
-            return DropIndexByName(indexName);
+            return DropIndexByNameAsync(indexName);
         }
 
         /// <summary>
@@ -446,10 +447,10 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keyNames">The names of the indexed fields.</param>
         /// <returns>A <see cref="CommandResult"/>.</returns>
-        public virtual CommandResult DropIndex(params string[] keyNames)
+        public virtual Task<CommandResult> DropIndexAsync(params string[] keyNames)
         {
             string indexName = GetIndexName(keyNames);
-            return DropIndexByName(indexName);
+            return DropIndexByNameAsync(indexName);
         }
 
         /// <summary>
@@ -457,7 +458,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="indexName">The name of the index.</param>
         /// <returns>A <see cref="CommandResult"/>.</returns>
-        public virtual CommandResult DropIndexByName(string indexName)
+        public virtual async Task<CommandResult> DropIndexByNameAsync(string indexName)
         {
             var command = new CommandDocument
             {
@@ -466,7 +467,7 @@ namespace MongoDB.Driver
             };
             try
             {
-                return RunCommandAs<CommandResult>(command);
+                return await RunCommandAsAsync<CommandResult>(command).ConfigureAwait(false);
             }
             catch (MongoCommandException ex)
             {
@@ -484,9 +485,9 @@ namespace MongoDB.Driver
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         /// <param name="options">The index options(usually an IndexOptionsDocument or created using the IndexOption builder).</param>
         [Obsolete("Use CreateIndex instead.")]
-        public virtual void EnsureIndex(IMongoIndexKeys keys, IMongoIndexOptions options)
+        public virtual Task EnsureIndexAsync(IMongoIndexKeys keys, IMongoIndexOptions options)
         {
-            CreateIndex(keys, options);
+            return CreateIndexAsync(keys, options);
         }
 
         /// <summary>
@@ -494,9 +495,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         [Obsolete("Use CreateIndex instead.")]
-        public virtual void EnsureIndex(IMongoIndexKeys keys)
+        public virtual Task EnsureIndexAsync(IMongoIndexKeys keys)
         {
-            CreateIndex(keys);
+            return CreateIndexAsync(keys);
         }
 
         /// <summary>
@@ -504,9 +505,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keyNames">The names of the indexed fields.</param>
         [Obsolete("Use CreateIndex instead.")]
-        public virtual void EnsureIndex(params string[] keyNames)
+        public virtual Task EnsureIndexAsync(params string[] keyNames)
         {
-            CreateIndex(keyNames);
+            return CreateIndexAsync(keyNames);
         }
 
         /// <summary>
@@ -546,10 +547,10 @@ namespace MongoDB.Driver
         /// <param name="update">The update to apply to the matching document.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
         [Obsolete("Use the overload of FindAndModify that has a FindAndModifyArgs parameter instead.")]
-        public virtual FindAndModifyResult FindAndModify(IMongoQuery query, IMongoSortBy sortBy, IMongoUpdate update)
+        public virtual Task<FindAndModifyResult> FindAndModifyAsync(IMongoQuery query, IMongoSortBy sortBy, IMongoUpdate update)
         {
             var args = new FindAndModifyArgs { Query = query, SortBy = sortBy, Update = update };
-            return FindAndModify(args);
+            return FindAndModifyAsync(args);
         }
 
         /// <summary>
@@ -561,7 +562,7 @@ namespace MongoDB.Driver
         /// <param name="returnNew">Whether to return the new or old version of the modified document in the <see cref="FindAndModifyResult"/>.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
         [Obsolete("Use the overload of FindAndModify that has a FindAndModifyArgs parameter instead.")]
-        public virtual FindAndModifyResult FindAndModify(
+        public virtual Task<FindAndModifyResult> FindAndModifyAsync(
             IMongoQuery query,
             IMongoSortBy sortBy,
             IMongoUpdate update,
@@ -569,7 +570,7 @@ namespace MongoDB.Driver
         {
             var versionReturned = returnNew ? FindAndModifyDocumentVersion.Modified : FindAndModifyDocumentVersion.Original;
             var args = new FindAndModifyArgs { Query = query, SortBy = sortBy, Update = update, VersionReturned = versionReturned };
-            return FindAndModify(args);
+            return FindAndModifyAsync(args);
         }
 
         /// <summary>
@@ -582,7 +583,7 @@ namespace MongoDB.Driver
         /// <param name="upsert">Whether to do an upsert if no matching document is found.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
         [Obsolete("Use the overload of FindAndModify that has a FindAndModifyArgs parameter instead.")]
-        public virtual FindAndModifyResult FindAndModify(
+        public virtual Task<FindAndModifyResult> FindAndModifyAsync(
             IMongoQuery query,
             IMongoSortBy sortBy,
             IMongoUpdate update,
@@ -591,7 +592,7 @@ namespace MongoDB.Driver
         {
             var versionReturned = returnNew ? FindAndModifyDocumentVersion.Modified : FindAndModifyDocumentVersion.Original;
             var args = new FindAndModifyArgs { Query = query, SortBy = sortBy, Update = update, VersionReturned = versionReturned, Upsert = upsert };
-            return FindAndModify(args);
+            return FindAndModifyAsync(args);
         }
 
         /// <summary>
@@ -605,7 +606,7 @@ namespace MongoDB.Driver
         /// <param name="upsert">Whether to do an upsert if no matching document is found.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
         [Obsolete("Use the overload of FindAndModify that has a FindAndModifyArgs parameter instead.")]
-        public virtual FindAndModifyResult FindAndModify(
+        public virtual Task<FindAndModifyResult> FindAndModifyAsync(
             IMongoQuery query,
             IMongoSortBy sortBy,
             IMongoUpdate update,
@@ -615,7 +616,7 @@ namespace MongoDB.Driver
         {
             var versionReturned = returnNew ? FindAndModifyDocumentVersion.Modified : FindAndModifyDocumentVersion.Original;
             var args = new FindAndModifyArgs { Query = query, SortBy = sortBy, Update = update, Fields = fields, VersionReturned = versionReturned, Upsert = upsert };
-            return FindAndModify(args);
+            return FindAndModifyAsync(args);
         }
 
         /// <summary>
@@ -623,7 +624,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
-        public virtual FindAndModifyResult FindAndModify(FindAndModifyArgs args)
+        public virtual async Task<FindAndModifyResult> FindAndModifyAsync(FindAndModifyArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.Update == null) { throw new ArgumentException("Update is null.", "args"); }
@@ -641,7 +642,7 @@ namespace MongoDB.Driver
             };
             try
             {
-                return RunCommandAs<FindAndModifyResult>(command);
+                return await RunCommandAsAsync<FindAndModifyResult>(command).ConfigureAwait(false);
             }
             catch (MongoCommandException ex)
             {
@@ -666,10 +667,10 @@ namespace MongoDB.Driver
         /// <param name="sortBy">The sort order to select one of the matching documents.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
         [Obsolete("Use the overload of FindAndRemove that has a FindAndRemoveArgs parameter instead.")]
-        public virtual FindAndModifyResult FindAndRemove(IMongoQuery query, IMongoSortBy sortBy)
+        public virtual Task<FindAndModifyResult> FindAndRemoveAsync(IMongoQuery query, IMongoSortBy sortBy)
         {
             var args = new FindAndRemoveArgs { Query = query, SortBy = sortBy };
-            return FindAndRemove(args);
+            return FindAndRemoveAsync(args);
         }
 
         /// <summary>
@@ -677,7 +678,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="FindAndModifyResult"/>.</returns>
-        public virtual FindAndModifyResult FindAndRemove(FindAndRemoveArgs args)
+        public virtual async Task<FindAndModifyResult> FindAndRemoveAsync(FindAndRemoveArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             
@@ -692,7 +693,7 @@ namespace MongoDB.Driver
             };
             try
             {
-                return RunCommandAs<FindAndModifyResult>(command);
+                return await RunCommandAsAsync<FindAndModifyResult>(command).ConfigureAwait(false);
             }
             catch (MongoCommandException ex)
             {
@@ -739,10 +740,10 @@ namespace MongoDB.Driver
         /// </summary>
         /// <typeparam name="TDocument">The type to deserialize the documents as.</typeparam>
         /// <returns>A TDocument (or null if not found).</returns>
-        public virtual TDocument FindOneAs<TDocument>()
+        public virtual Task<TDocument> FindOneAsAsync<TDocument>()
         {
             var args = new FindOneArgs { Query = null };
-            return FindOneAs<TDocument>(args);
+            return FindOneAsAsync<TDocument>(args);
         }
 
         /// <summary>
@@ -751,7 +752,7 @@ namespace MongoDB.Driver
         /// <typeparam name="TDocument">The type of the document.</typeparam>
         /// <param name="args">The args.</param>
         /// <returns>A TDocument (or null if not found).</returns>
-        public virtual TDocument FindOneAs<TDocument>(FindOneArgs args)
+        public virtual Task<TDocument> FindOneAsAsync<TDocument>(FindOneArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
 
@@ -780,7 +781,7 @@ namespace MongoDB.Driver
                 cursor.SetMaxTime(args.MaxTime.Value);
             }
             cursor.SetLimit(-1);
-            return cursor.FirstOrDefault();
+            return cursor.FirstOrDefaultAsync();
         }
 
         /// <summary>
@@ -789,10 +790,10 @@ namespace MongoDB.Driver
         /// <typeparam name="TDocument">The type to deserialize the documents as.</typeparam>
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <returns>A TDocument (or null if not found).</returns>
-        public virtual TDocument FindOneAs<TDocument>(IMongoQuery query)
+        public virtual Task<TDocument> FindOneAsAsync<TDocument>(IMongoQuery query)
         {
             var args = new FindOneArgs { Query = query };
-            return FindOneAs<TDocument>(args);
+            return FindOneAsAsync<TDocument>(args);
         }
 
         /// <summary>
@@ -844,9 +845,9 @@ namespace MongoDB.Driver
         /// <typeparam name="TDocument">The nominal type of the document.</typeparam>
         /// <param name="id">The id of the document.</param>
         /// <returns>A TDocument (or null if not found).</returns>
-        public virtual TDocument FindOneByIdAs<TDocument>(BsonValue id)
+        public virtual Task<TDocument> FindOneByIdAsAsync<TDocument>(BsonValue id)
         {
-            return FindOneAs<TDocument>(Query.EQ("_id", id));
+            return FindOneAsAsync<TDocument>(Query.EQ("_id", id));
         }
 
         /// <summary>
@@ -869,7 +870,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options for the geoHaystack search (null if none).</param>
         /// <returns>A <see cref="GeoNearResult{TDocument}"/>.</returns>
         [Obsolete("Use the overload of GeoHaystackSearchAs that has a GeoHaystackSearchArgs parameter instead.")]
-        public virtual GeoHaystackSearchResult<TDocument> GeoHaystackSearchAs<TDocument>(
+        public virtual Task<GeoHaystackSearchResult<TDocument>> GeoHaystackSearchAsAsync<TDocument>(
             double x,
             double y,
             IMongoGeoHaystackSearchOptions options)
@@ -887,7 +888,7 @@ namespace MongoDB.Driver
                 args.AdditionalFieldName = searchElement.Name;
                 args.AdditionalFieldValue = searchElement.Value;
             }
-            return GeoHaystackSearchAs<TDocument>(args);
+            return GeoHaystackSearchAsAsync<TDocument>(args);
         }
 
         /// <summary>
@@ -896,7 +897,7 @@ namespace MongoDB.Driver
         /// <typeparam name="TDocument">The type of the found documents.</typeparam>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="GeoNearResult{TDocument}"/>.</returns>
-        public virtual GeoHaystackSearchResult<TDocument> GeoHaystackSearchAs<TDocument>(GeoHaystackSearchArgs args)
+        public virtual Task<GeoHaystackSearchResult<TDocument>> GeoHaystackSearchAsAsync<TDocument>(GeoHaystackSearchArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.Near == null) { throw new ArgumentException("Near is null.", "args"); }
@@ -916,7 +917,7 @@ namespace MongoDB.Driver
                 { "limit", () => args.Limit.Value, args.Limit.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            return RunCommandAs<GeoHaystackSearchResult<TDocument>>(command);
+            return RunCommandAsAsync<GeoHaystackSearchResult<TDocument>>(command);
         }
 
         /// <summary>
@@ -958,7 +959,7 @@ namespace MongoDB.Driver
         /// <typeparam name="TDocument">The type to deserialize the documents as.</typeparam>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="GeoNearResult{TDocument}"/>.</returns>
-        public virtual GeoNearResult<TDocument> GeoNearAs<TDocument>(GeoNearArgs args)
+        public virtual async Task<GeoNearResult<TDocument>> GeoNearAsAsync<TDocument>(GeoNearArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.Near == null) { throw new ArgumentException("Near is null.", "args"); }
@@ -976,7 +977,7 @@ namespace MongoDB.Driver
                 { "uniqueDocs", () => args.UniqueDocs.Value, args.UniqueDocs.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            var result = RunCommandAs<GeoNearResult<TDocument>>(command);
+            var result = await RunCommandAsAsync<GeoNearResult<TDocument>>(command).ConfigureAwait(false);
             result.Response["ns"] = FullName; 
             return result;
         }
@@ -991,14 +992,14 @@ namespace MongoDB.Driver
         /// <param name="limit">The maximum number of results returned.</param>
         /// <returns>A <see cref="GeoNearResult{TDocument}"/>.</returns>
         [Obsolete("Use the overload of GeoNearAs that has a GeoNearArgs parameter instead.")]
-        public virtual GeoNearResult<TDocument> GeoNearAs<TDocument>(
+        public virtual Task<GeoNearResult<TDocument>> GeoNearAsAsync<TDocument>(
             IMongoQuery query,
             double x,
             double y,
             int limit)
         {
 #pragma warning disable 618
-            return GeoNearAs<TDocument>(query, x, y, limit, GeoNearOptions.Null);
+            return GeoNearAsAsync<TDocument>(query, x, y, limit, GeoNearOptions.Null);
 #pragma warning restore
         }
 
@@ -1013,7 +1014,7 @@ namespace MongoDB.Driver
         /// <param name="options">The GeoNear command options (usually a GeoNearOptionsDocument or constructed using the GeoNearOptions builder).</param>
         /// <returns>A <see cref="GeoNearResult{TDocument}"/>.</returns>
         [Obsolete("Use the overload of GeoNearAs that has a GeoNearArgs parameter instead.")]
-        public virtual GeoNearResult<TDocument> GeoNearAs<TDocument>(
+        public virtual Task<GeoNearResult<TDocument>> GeoNearAsAsync<TDocument>(
             IMongoQuery query,
             double x,
             double y,
@@ -1030,7 +1031,7 @@ namespace MongoDB.Driver
                 MaxDistance = optionsDocument.Contains("maxDistance") ? (double?)optionsDocument["maxDistance"].ToDouble() : null,
                 Spherical = optionsDocument.Contains("spherical") ? (bool?)optionsDocument["spherical"].ToBoolean() : null
             };
-            return GeoNearAs<TDocument>(args);
+            return GeoNearAsAsync<TDocument>(args);
         }
 
         /// <summary>
@@ -1100,9 +1101,9 @@ namespace MongoDB.Driver
         /// Gets the stats for this collection.
         /// </summary>
         /// <returns>The stats for this collection as a <see cref="CollectionStatsResult"/>.</returns>
-        public virtual CollectionStatsResult GetStats()
+        public virtual Task<CollectionStatsResult> GetStatsAsync()
         {
-            return GetStats(new GetStatsArgs());
+            return GetStatsAsync(new GetStatsArgs());
         }
 
         /// <summary>
@@ -1110,7 +1111,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>The stats for this collection as a <see cref="CollectionStatsResult"/>.</returns>
-        public virtual CollectionStatsResult GetStats(GetStatsArgs args)
+        public virtual Task<CollectionStatsResult> GetStatsAsync(GetStatsArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
 
@@ -1120,21 +1121,21 @@ namespace MongoDB.Driver
                 { "scale", () => args.Scale.Value, args.Scale.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            return RunCommandAs<CollectionStatsResult>(command);
+            return RunCommandAsAsync<CollectionStatsResult>(command);
         }
 
         /// <summary>
         /// Gets the total data size for this collection (data + indexes).
         /// </summary>
         /// <returns>The total data size.</returns>
-        public virtual long GetTotalDataSize()
+        public virtual async Task<long> GetTotalDataSizeAsync()
         {
-            var totalSize = GetStats().DataSize;
+            var totalSize = (await GetStatsAsync()).DataSize;
             foreach (var index in GetIndexes())
             {
                 var indexCollectionName = string.Format("{0}.${1}", _name, index.Name);
                 var indexCollection = _database.GetCollection(indexCollectionName);
-                totalSize += indexCollection.GetStats().DataSize;
+                totalSize += (await indexCollection.GetStatsAsync()).DataSize;
             }
             return totalSize;
         }
@@ -1143,14 +1144,14 @@ namespace MongoDB.Driver
         /// Gets the total storage size for this collection (data + indexes + overhead).
         /// </summary>
         /// <returns>The total storage size.</returns>
-        public virtual long GetTotalStorageSize()
+        public virtual async Task<long> GetTotalStorageSizeAsync()
         {
-            var totalSize = GetStats().StorageSize;
+            var totalSize = (await GetStatsAsync()).StorageSize;
             foreach (var index in GetIndexes())
             {
                 var indexCollectionName = string.Format("{0}.${1}", _name, index.Name);
                 var indexCollection = _database.GetCollection(indexCollectionName);
-                totalSize += indexCollection.GetStats().StorageSize;
+                totalSize += (await indexCollection.GetStatsAsync()).StorageSize;
             }
             return totalSize;
         }
@@ -1160,7 +1161,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A list of results as BsonDocuments.</returns>
-        public virtual IEnumerable<BsonDocument> Group(GroupArgs args)
+        public virtual async Task<IEnumerable<BsonDocument>> GroupAsync(GroupArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.KeyFields == null && args.KeyFunction == null)
@@ -1195,7 +1196,7 @@ namespace MongoDB.Driver
                 },
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            var result = RunCommandAs<CommandResult>(command);
+            var result = await RunCommandAsAsync<CommandResult>(command);
             return result.Response["retval"].AsBsonArray.Values.Cast<BsonDocument>();
         }
 
@@ -1208,14 +1209,14 @@ namespace MongoDB.Driver
         /// <param name="reduce">A JavaScript function that is called for each matching document in a group.</param>
         /// <param name="finalize">A JavaScript function that is called at the end of the group command.</param>
         /// <returns>A list of results as BsonDocuments.</returns>
-        public virtual IEnumerable<BsonDocument> Group(
+        public virtual Task<IEnumerable<BsonDocument>> GroupAsync(
             IMongoQuery query,
             BsonJavaScript keyFunction,
             BsonDocument initial,
             BsonJavaScript reduce,
             BsonJavaScript finalize)
         {
-            return Group(new GroupArgs
+            return GroupAsync(new GroupArgs
             {
                 Query = query,
                 KeyFunction = keyFunction,
@@ -1234,14 +1235,14 @@ namespace MongoDB.Driver
         /// <param name="reduce">A JavaScript function that is called for each matching document in a group.</param>
         /// <param name="finalize">A JavaScript function that is called at the end of the group command.</param>
         /// <returns>A list of results as BsonDocuments.</returns>
-        public virtual IEnumerable<BsonDocument> Group(
+        public virtual Task<IEnumerable<BsonDocument>> GroupAsync(
             IMongoQuery query,
             IMongoGroupBy keys,
             BsonDocument initial,
             BsonJavaScript reduce,
             BsonJavaScript finalize)
         {
-            return Group(new GroupArgs
+            return GroupAsync(new GroupArgs
             {
                 Query = query,
                 KeyFields = keys,
@@ -1260,14 +1261,14 @@ namespace MongoDB.Driver
         /// <param name="reduce">A JavaScript function that is called for each matching document in a group.</param>
         /// <param name="finalize">A JavaScript function that is called at the end of the group command.</param>
         /// <returns>A list of results as BsonDocuments.</returns>
-        public virtual IEnumerable<BsonDocument> Group(
+        public virtual Task<IEnumerable<BsonDocument>> GroupAsync(
             IMongoQuery query,
             string key,
             BsonDocument initial,
             BsonJavaScript reduce,
             BsonJavaScript finalize)
         {
-            return Group(new GroupArgs
+            return GroupAsync(new GroupArgs
             {
                 Query = query,
                 KeyFields = GroupBy.Keys(key),
@@ -1282,10 +1283,10 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         /// <returns>True if the index exists.</returns>
-        public virtual bool IndexExists(IMongoIndexKeys keys)
+        public virtual Task<bool> IndexExistsAsync(IMongoIndexKeys keys)
         {
             string indexName = GetIndexName(keys.ToBsonDocument(), null);
-            return IndexExistsByName(indexName);
+            return IndexExistsByNameAsync(indexName);
         }
 
         /// <summary>
@@ -1293,10 +1294,10 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="keyNames">The names of the fields in the index.</param>
         /// <returns>True if the index exists.</returns>
-        public virtual bool IndexExists(params string[] keyNames)
+        public virtual Task<bool> IndexExistsAsync(params string[] keyNames)
         {
             string indexName = GetIndexName(keyNames);
-            return IndexExistsByName(indexName);
+            return IndexExistsByNameAsync(indexName);
         }
 
         /// <summary>
@@ -1304,11 +1305,11 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="indexName">The name of the index.</param>
         /// <returns>True if the index exists.</returns>
-        public virtual bool IndexExistsByName(string indexName)
+        public virtual async Task<bool> IndexExistsByNameAsync(string indexName)
         {
             var indexes = _database.GetCollection("system.indexes");
             var query = Query.And(Query.EQ("name", indexName), Query.EQ("ns", FullName));
-            return indexes.Count(query) != 0;
+            return (await indexes.CountAsync(query).ConfigureAwait(false)) != 0;
         }
 
         /// <summary>
@@ -1339,9 +1340,9 @@ namespace MongoDB.Driver
         /// <typeparam name="TNominalType">The nominal type of the document to insert.</typeparam>
         /// <param name="document">The document to insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert<TNominalType>(TNominalType document)
+        public virtual Task<WriteConcernResult> InsertAsync<TNominalType>(TNominalType document)
         {
-            return Insert(typeof(TNominalType), document);
+            return InsertAsync(typeof(TNominalType), document);
         }
 
         /// <summary>
@@ -1351,9 +1352,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to insert.</param>
         /// <param name="options">The options to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert<TNominalType>(TNominalType document, MongoInsertOptions options)
+        public virtual Task<WriteConcernResult> InsertAsync<TNominalType>(TNominalType document, MongoInsertOptions options)
         {
-            return Insert(typeof(TNominalType), document, options);
+            return InsertAsync(typeof(TNominalType), document, options);
         }
 
         /// <summary>
@@ -1363,9 +1364,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to insert.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert<TNominalType>(TNominalType document, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> InsertAsync<TNominalType>(TNominalType document, WriteConcern writeConcern)
         {
-            return Insert(typeof(TNominalType), document, writeConcern);
+            return InsertAsync(typeof(TNominalType), document, writeConcern);
         }
 
         /// <summary>
@@ -1374,10 +1375,10 @@ namespace MongoDB.Driver
         /// <param name="nominalType">The nominal type of the document to insert.</param>
         /// <param name="document">The document to insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert(Type nominalType, object document)
+        public virtual Task<WriteConcernResult> InsertAsync(Type nominalType, object document)
         {
             var options = new MongoInsertOptions();
-            return Insert(nominalType, document, options);
+            return InsertAsync(nominalType, document, options);
         }
 
         /// <summary>
@@ -1387,13 +1388,13 @@ namespace MongoDB.Driver
         /// <param name="document">The document to insert.</param>
         /// <param name="options">The options to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert(Type nominalType, object document, MongoInsertOptions options)
+        public virtual async Task<WriteConcernResult> InsertAsync(Type nominalType, object document, MongoInsertOptions options)
         {
             if (document == null)
             {
                 throw new ArgumentNullException("document");
             }
-            var results = InsertBatch(nominalType, new object[] { document }, options);
+            var results = await InsertBatchAsync(nominalType, new object[] { document }, options);
             return (results == null) ? null : results.Single();
         }
 
@@ -1404,10 +1405,10 @@ namespace MongoDB.Driver
         /// <param name="document">The document to insert.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert(Type nominalType, object document, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> InsertAsync(Type nominalType, object document, WriteConcern writeConcern)
         {
             var options = new MongoInsertOptions { WriteConcern = writeConcern};
-            return Insert(nominalType, document, options);
+            return InsertAsync(nominalType, document, options);
         }
 
         /// <summary>
@@ -1416,13 +1417,13 @@ namespace MongoDB.Driver
         /// <typeparam name="TNominalType">The type of the documents to insert.</typeparam>
         /// <param name="documents">The documents to insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch<TNominalType>(IEnumerable<TNominalType> documents)
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync<TNominalType>(IEnumerable<TNominalType> documents)
         {
             if (documents == null)
             {
                 throw new ArgumentNullException("documents");
             }
-            return InsertBatch(typeof(TNominalType), documents.Cast<object>());
+            return InsertBatchAsync(typeof(TNominalType), documents.Cast<object>());
         }
 
         /// <summary>
@@ -1432,7 +1433,7 @@ namespace MongoDB.Driver
         /// <param name="documents">The documents to insert.</param>
         /// <param name="options">The options to use for this Insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch<TNominalType>(
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync<TNominalType>(
             IEnumerable<TNominalType> documents,
             MongoInsertOptions options)
         {
@@ -1440,7 +1441,7 @@ namespace MongoDB.Driver
             {
                 throw new ArgumentNullException("documents");
             }
-            return InsertBatch(typeof(TNominalType), documents.Cast<object>(), options);
+            return InsertBatchAsync(typeof(TNominalType), documents.Cast<object>(), options);
         }
 
         /// <summary>
@@ -1450,7 +1451,7 @@ namespace MongoDB.Driver
         /// <param name="documents">The documents to insert.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch<TNominalType>(
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync<TNominalType>(
             IEnumerable<TNominalType> documents,
             WriteConcern writeConcern)
         {
@@ -1458,7 +1459,7 @@ namespace MongoDB.Driver
             {
                 throw new ArgumentNullException("documents");
             }
-            return InsertBatch(typeof(TNominalType), documents.Cast<object>(), writeConcern);
+            return InsertBatchAsync(typeof(TNominalType), documents.Cast<object>(), writeConcern);
         }
 
         /// <summary>
@@ -1467,10 +1468,10 @@ namespace MongoDB.Driver
         /// <param name="nominalType">The nominal type of the documents to insert.</param>
         /// <param name="documents">The documents to insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch(Type nominalType, IEnumerable documents)
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync(Type nominalType, IEnumerable documents)
         {
             var options = new MongoInsertOptions();
-            return InsertBatch(nominalType, documents, options);
+            return InsertBatchAsync(nominalType, documents, options);
         }
 
         /// <summary>
@@ -1480,13 +1481,13 @@ namespace MongoDB.Driver
         /// <param name="documents">The documents to insert.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch(
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync(
             Type nominalType,
             IEnumerable documents,
             WriteConcern writeConcern)
         {
             var options = new MongoInsertOptions { WriteConcern = writeConcern};
-            return InsertBatch(nominalType, documents, options);
+            return InsertBatchAsync(nominalType, documents, options);
         }
 
         /// <summary>
@@ -1496,7 +1497,7 @@ namespace MongoDB.Driver
         /// <param name="documents">The documents to insert.</param>
         /// <param name="options">The options to use for this Insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch(
+        public virtual async Task<IEnumerable<WriteConcernResult>> InsertBatchAsync(
             Type nominalType,
             IEnumerable documents,
             MongoInsertOptions options)
@@ -1514,7 +1515,7 @@ namespace MongoDB.Driver
                 throw new ArgumentNullException("options");
             }
 
-            var connection = _server.AcquireConnection(ReadPreference.Primary);
+            var connection = await _server.AcquireConnectionAsync(ReadPreference.Primary).ConfigureAwait(false);
             try
             {
                 var assignId = _settings.AssignIdOnInsert ? (Action<InsertRequest>)AssignId : null;
@@ -1546,7 +1547,7 @@ namespace MongoDB.Driver
                     GetBinaryWriterSettings());
                 var insertOperation = new InsertOpcodeOperation(args);
 
-                return insertOperation.Execute(connection);
+                return await insertOperation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {
@@ -1558,9 +1559,9 @@ namespace MongoDB.Driver
         /// Tests whether this collection is capped.
         /// </summary>
         /// <returns>True if this collection is capped.</returns>
-        public virtual bool IsCapped()
+        public virtual async Task<bool> IsCappedAsync()
         {
-            return GetStats().IsCapped;
+            return (await GetStatsAsync()).IsCapped;
         }
 
         /// <summary>
@@ -1571,7 +1572,7 @@ namespace MongoDB.Driver
         /// <param name="options">Options for this map/reduce command (see <see cref="MapReduceOptionsDocument"/>, <see cref="MapReduceOptionsWrapper"/> and the <see cref="MapReduceOptions"/> builder).</param>
         /// <returns>A <see cref="MapReduceResult"/>.</returns>
         [Obsolete("Use the overload of MapReduce that has a MapReduceArgs parameter instead.")]
-        public virtual MapReduceResult MapReduce(
+        public virtual Task<MapReduceResult> MapReduceAsync(
             BsonJavaScript map,
             BsonJavaScript reduce,
             IMongoMapReduceOptions options)
@@ -1579,7 +1580,7 @@ namespace MongoDB.Driver
             var args = MapReduceArgsFromOptions(options);
             args.MapFunction = map;
             args.ReduceFunction = reduce;
-            return MapReduce(args);
+            return MapReduceAsync(args);
         }
 
         /// <summary>
@@ -1591,7 +1592,7 @@ namespace MongoDB.Driver
         /// <param name="options">Options for this map/reduce command (see <see cref="MapReduceOptionsDocument"/>, <see cref="MapReduceOptionsWrapper"/> and the <see cref="MapReduceOptions"/> builder).</param>
         /// <returns>A <see cref="MapReduceResult"/>.</returns>
         [Obsolete("Use the overload of MapReduce that has a MapReduceArgs parameter instead.")]
-        public virtual MapReduceResult MapReduce(
+        public virtual Task<MapReduceResult> MapReduceAsync(
             IMongoQuery query,
             BsonJavaScript map,
             BsonJavaScript reduce,
@@ -1601,7 +1602,7 @@ namespace MongoDB.Driver
             args.Query = query;
             args.MapFunction = map;
             args.ReduceFunction = reduce;
-            return MapReduce(args);
+            return MapReduceAsync(args);
         }
 
         /// <summary>
@@ -1612,9 +1613,9 @@ namespace MongoDB.Driver
         /// <param name="reduce">A JavaScript function called on the values emitted by the map function.</param>
         /// <returns>A <see cref="MapReduceResult"/>.</returns>
         [Obsolete("Use the overload of MapReduce that has a MapReduceArgs parameter instead.")]
-        public virtual MapReduceResult MapReduce(IMongoQuery query, BsonJavaScript map, BsonJavaScript reduce)
+        public virtual Task<MapReduceResult> MapReduceAsync(IMongoQuery query, BsonJavaScript map, BsonJavaScript reduce)
         {
-            return MapReduce(new MapReduceArgs { Query = query, MapFunction = map, ReduceFunction = reduce });
+            return MapReduceAsync(new MapReduceArgs { Query = query, MapFunction = map, ReduceFunction = reduce });
         }
 
         /// <summary>
@@ -1624,9 +1625,9 @@ namespace MongoDB.Driver
         /// <param name="reduce">A JavaScript function called on the values emitted by the map function.</param>
         /// <returns>A <see cref="MapReduceResult"/>.</returns>
         [Obsolete("Use the overload of MapReduce that has a MapReduceArgs parameter instead.")]
-        public virtual MapReduceResult MapReduce(BsonJavaScript map, BsonJavaScript reduce)
+        public virtual Task<MapReduceResult> MapReduceAsync(BsonJavaScript map, BsonJavaScript reduce)
         {
-            return MapReduce(new MapReduceArgs { MapFunction = map, ReduceFunction = reduce });
+            return MapReduceAsync(new MapReduceArgs { MapFunction = map, ReduceFunction = reduce });
         }
 
         /// <summary>
@@ -1634,7 +1635,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="MapReduceResult"/>.</returns>
-        public virtual MapReduceResult MapReduce(MapReduceArgs args)
+        public virtual async Task<MapReduceResult> MapReduceAsync(MapReduceArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.MapFunction == null) { throw new ArgumentException("MapFunction is null.", "args"); }
@@ -1673,7 +1674,7 @@ namespace MongoDB.Driver
                 { "verbose", () => args.Verbose.Value, args.Verbose.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            var result = RunCommandAs<MapReduceResult>(command);
+            var result = await RunCommandAsAsync<MapReduceResult>(command);
             result.SetInputDatabase(_database);
 
             return result;
@@ -1685,10 +1686,10 @@ namespace MongoDB.Driver
         /// <typeparam name="TDocument">The type of the document.</typeparam>
         /// <param name="args">The args.</param>
         /// <returns>Multiple enumerators, one for each cursor.</returns>
-        public ReadOnlyCollection<IEnumerator<TDocument>> ParallelScanAs<TDocument>(ParallelScanArgs args)
+        public async Task<ReadOnlyCollection<IEnumerator<TDocument>>> ParallelScanAsAsync<TDocument>(ParallelScanArgs args)
         {
             var readPreference = args.ReadPreference ?? _settings.ReadPreference ?? ReadPreference.Primary;
-            var connection = _server.AcquireConnection(readPreference);
+            var connection = await _server.AcquireConnectionAsync(readPreference).ConfigureAwait(false);
             try
             {
                 var serializer = args.Serializer ?? BsonSerializer.LookupSerializer(typeof(TDocument));
@@ -1704,7 +1705,7 @@ namespace MongoDB.Driver
                     readPreference,
                     GetBinaryReaderSettings(),
                     GetBinaryWriterSettings());
-                return operation.Execute(connection);
+                return await operation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {
@@ -1720,26 +1721,28 @@ namespace MongoDB.Driver
         /// <returns>Multiple enumerators, one for each cursor.</returns>
         public ReadOnlyCollection<IEnumerator> ParallelScanAs(Type documentType, ParallelScanArgs args)
         {
-            var methodDefinition = GetType().GetMethod("ParallelScanAs", new Type[] { typeof(ParallelScanArgs) });
-            var methodInfo = methodDefinition.MakeGenericMethod(documentType);
-            try
-            {
-                return ((IEnumerable)methodInfo.Invoke(this, new object[] { args })).Cast<IEnumerator>().ToList().AsReadOnly();
-            }
-            catch (TargetInvocationException ex)
-            {
-                throw ex.InnerException;
-            }
+            throw new NotImplementedException();
+
+            //var methodDefinition = GetType().GetMethod("ParallelScanAs", new Type[] { typeof(ParallelScanArgs) });
+            //var methodInfo = methodDefinition.MakeGenericMethod(documentType);
+            //try
+            //{
+            //    return ((IEnumerable)methodInfo.Invoke(this, new object[] { args })).Cast<IEnumerator>().ToList().AsReadOnly();
+            //}
+            //catch (TargetInvocationException ex)
+            //{
+            //    throw ex.InnerException;
+            //}
         }
 
         /// <summary>
         /// Runs the ReIndex command on this collection.
         /// </summary>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult ReIndex()
+        public virtual Task<CommandResult> ReIndexAsync()
         {
             var command = new CommandDocument("reIndex", _name);
-            return RunCommandAs<CommandResult>(command);
+            return RunCommandAsAsync<CommandResult>(command);
         }
 
         /// <summary>
@@ -1747,9 +1750,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Remove(IMongoQuery query)
+        public virtual Task<WriteConcernResult> RemoveAsync(IMongoQuery query)
         {
-            return Remove(query, RemoveFlags.None, null);
+            return RemoveAsync(query, RemoveFlags.None, null);
         }
 
         /// <summary>
@@ -1758,9 +1761,9 @@ namespace MongoDB.Driver
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Remove(IMongoQuery query, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> RemoveAsync(IMongoQuery query, WriteConcern writeConcern)
         {
-            return Remove(query, RemoveFlags.None, writeConcern);
+            return RemoveAsync(query, RemoveFlags.None, writeConcern);
         }
 
         /// <summary>
@@ -1769,9 +1772,9 @@ namespace MongoDB.Driver
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <param name="flags">The flags for this Remove (see <see cref="RemoveFlags"/>).</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Remove(IMongoQuery query, RemoveFlags flags)
+        public virtual Task<WriteConcernResult> RemoveAsync(IMongoQuery query, RemoveFlags flags)
         {
-            return Remove(query, flags, null);
+            return RemoveAsync(query, flags, null);
         }
 
         /// <summary>
@@ -1781,9 +1784,9 @@ namespace MongoDB.Driver
         /// <param name="flags">The flags for this Remove (see <see cref="RemoveFlags"/>).</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Remove(IMongoQuery query, RemoveFlags flags, WriteConcern writeConcern)
+        public virtual async Task<WriteConcernResult> RemoveAsync(IMongoQuery query, RemoveFlags flags, WriteConcern writeConcern)
         {
-            var connection = _server.AcquireConnection(ReadPreference.Primary);
+            var connection = await _server.AcquireConnectionAsync(ReadPreference.Primary).ConfigureAwait(false);
             try
             {
                 var maxBatchCount = 1;
@@ -1811,7 +1814,7 @@ namespace MongoDB.Driver
                     GetBinaryWriterSettings());
                 var deleteOperation = new DeleteOpcodeOperation(deleteOperationArgs);
 
-                return deleteOperation.Execute(connection);
+                return await deleteOperation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {
@@ -1820,22 +1823,22 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Removes all documents from this collection (see also <see cref="Drop"/>).
+        /// Removes all documents from this collection (see also <see cref="DropAsync"/>).
         /// </summary>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult RemoveAll()
+        public virtual Task<WriteConcernResult> RemoveAllAsync()
         {
-            return Remove(Query.Null, RemoveFlags.None, null);
+            return RemoveAsync(Query.Null, RemoveFlags.None, null);
         }
 
         /// <summary>
-        /// Removes all documents from this collection (see also <see cref="Drop"/>).
+        /// Removes all documents from this collection (see also <see cref="DropAsync"/>).
         /// </summary>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult RemoveAll(WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> RemoveAllAsync(WriteConcern writeConcern)
         {
-            return Remove(Query.Null, RemoveFlags.None, writeConcern);
+            return RemoveAsync(Query.Null, RemoveFlags.None, writeConcern);
         }
 
         /// <summary>
@@ -1845,9 +1848,9 @@ namespace MongoDB.Driver
         /// <typeparam name="TNominalType">The type of the document to save.</typeparam>
         /// <param name="document">The document to save.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save<TNominalType>(TNominalType document)
+        public virtual Task<WriteConcernResult> SaveAsync<TNominalType>(TNominalType document)
         {
-            return Save(typeof(TNominalType), document);
+            return SaveAsync(typeof(TNominalType), document);
         }
 
         /// <summary>
@@ -1858,9 +1861,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to save.</param>
         /// <param name="options">The options to use for this Save.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save<TNominalType>(TNominalType document, MongoInsertOptions options)
+        public virtual Task<WriteConcernResult> SaveAsync<TNominalType>(TNominalType document, MongoInsertOptions options)
         {
-            return Save(typeof(TNominalType), document, options);
+            return SaveAsync(typeof(TNominalType), document, options);
         }
 
         /// <summary>
@@ -1871,9 +1874,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to save.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save<TNominalType>(TNominalType document, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> SaveAsync<TNominalType>(TNominalType document, WriteConcern writeConcern)
         {
-            return Save(typeof(TNominalType), document, writeConcern);
+            return SaveAsync(typeof(TNominalType), document, writeConcern);
         }
 
         /// <summary>
@@ -1883,10 +1886,10 @@ namespace MongoDB.Driver
         /// <param name="nominalType">The type of the document to save.</param>
         /// <param name="document">The document to save.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save(Type nominalType, object document)
+        public virtual Task<WriteConcernResult> SaveAsync(Type nominalType, object document)
         {
             var options = new MongoInsertOptions();
-            return Save(nominalType, document, options);
+            return SaveAsync(nominalType, document, options);
         }
 
         /// <summary>
@@ -1897,7 +1900,7 @@ namespace MongoDB.Driver
         /// <param name="document">The document to save.</param>
         /// <param name="options">The options to use for this Save.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save(Type nominalType, object document, MongoInsertOptions options)
+        public virtual Task<WriteConcernResult> SaveAsync(Type nominalType, object document, MongoInsertOptions options)
         {
             if (nominalType == null)
             {
@@ -1928,7 +1931,7 @@ namespace MongoDB.Driver
                 {
                     id = idGenerator.GenerateId(this, document);
                     idProvider.SetDocumentId(document, id);
-                    return Insert(nominalType, document, options);
+                    return InsertAsync(nominalType, document, options);
                 }
             }
 
@@ -1957,7 +1960,7 @@ namespace MongoDB.Driver
                 WriteConcern = options.WriteConcern
             };
 
-            return Update(query, update, updateOptions);
+            return UpdateAsync(query, update, updateOptions);
         }
 
         /// <summary>
@@ -1968,10 +1971,10 @@ namespace MongoDB.Driver
         /// <param name="document">The document to save.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save(Type nominalType, object document, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> SaveAsync(Type nominalType, object document, WriteConcern writeConcern)
         {
             var options = new MongoInsertOptions { WriteConcern = writeConcern};
-            return Save(nominalType, document, options);
+            return SaveAsync(nominalType, document, options);
         }
 
         /// <summary>
@@ -1989,10 +1992,10 @@ namespace MongoDB.Driver
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <param name="update">The update to perform on the matching document.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Update(IMongoQuery query, IMongoUpdate update)
+        public virtual Task<WriteConcernResult> UpdateAsync(IMongoQuery query, IMongoUpdate update)
         {
             var options = new MongoUpdateOptions();
-            return Update(query, update, options);
+            return UpdateAsync(query, update, options);
         }
 
         /// <summary>
@@ -2002,7 +2005,7 @@ namespace MongoDB.Driver
         /// <param name="update">The update to perform on the matching document.</param>
         /// <param name="options">The update options.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Update(IMongoQuery query, IMongoUpdate update, MongoUpdateOptions options)
+        public virtual async Task<WriteConcernResult> UpdateAsync(IMongoQuery query, IMongoUpdate update, MongoUpdateOptions options)
         {
             var updateBuilder = update as UpdateBuilder;
             if (updateBuilder != null)
@@ -2018,7 +2021,7 @@ namespace MongoDB.Driver
                 throw new ArgumentNullException("options");
             }
 
-            var connection = _server.AcquireConnection(ReadPreference.Primary);
+            var connection = await _server.AcquireConnectionAsync(ReadPreference.Primary).ConfigureAwait(false);
             try
             {
                 var checkElementNames = options.CheckElementNames;
@@ -2052,7 +2055,7 @@ namespace MongoDB.Driver
                     GetBinaryWriterSettings());
                 var updateOperation = new UpdateOpcodeOperation(updateOperationArgs);
 
-                return updateOperation.Execute(connection);
+                return await updateOperation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {
@@ -2067,10 +2070,10 @@ namespace MongoDB.Driver
         /// <param name="update">The update to perform on the matching document.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Update(IMongoQuery query, IMongoUpdate update, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> UpdateAsync(IMongoQuery query, IMongoUpdate update, WriteConcern writeConcern)
         {
             var options = new MongoUpdateOptions { WriteConcern = writeConcern};
-            return Update(query, update, options);
+            return UpdateAsync(query, update, options);
         }
 
         /// <summary>
@@ -2080,10 +2083,10 @@ namespace MongoDB.Driver
         /// <param name="update">The update to perform on the matching document.</param>
         /// <param name="flags">The flags for this Update.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Update(IMongoQuery query, IMongoUpdate update, UpdateFlags flags)
+        public virtual Task<WriteConcernResult> UpdateAsync(IMongoQuery query, IMongoUpdate update, UpdateFlags flags)
         {
             var options = new MongoUpdateOptions { Flags = flags };
-            return Update(query, update, options);
+            return UpdateAsync(query, update, options);
         }
 
         /// <summary>
@@ -2094,7 +2097,7 @@ namespace MongoDB.Driver
         /// <param name="flags">The flags for this Update.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Update(
+        public virtual Task<WriteConcernResult> UpdateAsync(
             IMongoQuery query,
             IMongoUpdate update,
             UpdateFlags flags,
@@ -2105,16 +2108,16 @@ namespace MongoDB.Driver
                 Flags = flags,
                 WriteConcern = writeConcern
             };
-            return Update(query, update, options);
+            return UpdateAsync(query, update, options);
         }
 
         /// <summary>
         /// Validates the integrity of this collection.
         /// </summary>
         /// <returns>A <see cref="ValidateCollectionResult"/>.</returns>
-        public virtual ValidateCollectionResult Validate()
+        public virtual Task<ValidateCollectionResult> ValidateAsync()
         {
-            return Validate(new ValidateCollectionArgs());
+            return ValidateAsync(new ValidateCollectionArgs());
         }
 
         /// <summary>
@@ -2122,7 +2125,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="ValidateCollectionResult"/>.</returns>
-        public virtual ValidateCollectionResult Validate(ValidateCollectionArgs args)
+        public virtual Task<ValidateCollectionResult> ValidateAsync(ValidateCollectionArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
 
@@ -2133,7 +2136,7 @@ namespace MongoDB.Driver
                 { "scandata", () => args.ScanData.Value, args.ScanData.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            return RunCommandAs<ValidateCollectionResult>(command);
+            return RunCommandAsAsync<ValidateCollectionResult>(command);
         }
 
         // internal methods
@@ -2159,7 +2162,7 @@ namespace MongoDB.Driver
             };
         }
 
-        internal AggregateResult RunAggregateCommand(AggregateArgs args)
+        internal Task<AggregateResult> RunAggregateCommandAsync(AggregateArgs args)
         {
             BsonDocument cursor = null;
             if (args.OutputMode == AggregateOutputMode.Cursor)
@@ -2179,7 +2182,7 @@ namespace MongoDB.Driver
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
 
-            return RunCommandAs<AggregateResult>(aggregateCommand);
+            return RunCommandAsAsync<AggregateResult>(aggregateCommand);
         }
 
         // private methods
@@ -2223,7 +2226,7 @@ namespace MongoDB.Driver
             return index;
         }
 
-        private CommandResult CreateIndexWithCommand(IMongoIndexKeys keys, IMongoIndexOptions options)
+        private Task<CommandResult> CreateIndexWithCommandAsync(IMongoIndexKeys keys, IMongoIndexOptions options)
         {
             var command = new CommandDocument
             {
@@ -2231,10 +2234,10 @@ namespace MongoDB.Driver
                 { "indexes", new BsonArray { CreateIndexDocument(keys, options) } }
             };
 
-            return RunCommandAs<CommandResult>(command);
+            return RunCommandAsAsync<CommandResult>(command);
         }
 
-        private WriteConcernResult CreateIndexWithInsert(IMongoIndexKeys keys, IMongoIndexOptions options)
+        private Task<WriteConcernResult> CreateIndexWithInsertAsync(IMongoIndexKeys keys, IMongoIndexOptions options)
         {
             var index = CreateIndexDocument(keys, options);
             var insertOptions = new MongoInsertOptions
@@ -2243,7 +2246,7 @@ namespace MongoDB.Driver
                 WriteConcern = WriteConcern.Acknowledged
             };
             var indexes = _database.GetCollection("system.indexes");
-            var result = indexes.Insert(index, insertOptions);
+            var result = indexes.InsertAsync(index, insertOptions);
             return result;
         }
 
@@ -2429,13 +2432,13 @@ namespace MongoDB.Driver
             return args;
         }
 
-        private TCommandResult RunCommandAs<TCommandResult>(IMongoCommand command) where TCommandResult : CommandResult
+        private Task<TCommandResult> RunCommandAsAsync<TCommandResult>(IMongoCommand command) where TCommandResult : CommandResult
         {
             var resultSerializer = BsonSerializer.LookupSerializer(typeof(TCommandResult));
-            return RunCommandAs<TCommandResult>(command, resultSerializer, null);
+            return RunCommandAsAsync<TCommandResult>(command, resultSerializer, null);
         }
 
-        private TCommandResult RunCommandAs<TCommandResult>(
+        private async Task<TCommandResult> RunCommandAsAsync<TCommandResult>(
             IMongoCommand command,
             IBsonSerializer resultSerializer,
             IBsonSerializationOptions resultSerializationOptions) where TCommandResult : CommandResult
@@ -2465,10 +2468,10 @@ namespace MongoDB.Driver
                 resultSerializationOptions,
                 resultSerializer);
 
-            var connection = _server.AcquireConnection(readPreference);
+            var connection = await _server.AcquireConnectionAsync(readPreference).ConfigureAwait(false);
             try
             {
-                return commandOperation.Execute(connection);
+                return await commandOperation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {
@@ -2535,9 +2538,9 @@ namespace MongoDB.Driver
         /// Returns one document in this collection as a TDefaultDocument.
         /// </summary>
         /// <returns>A TDefaultDocument (or null if not found).</returns>
-        public virtual TDefaultDocument FindOne()
+        public virtual Task<TDefaultDocument> FindOneAsync()
         {
-            return FindOneAs<TDefaultDocument>();
+            return FindOneAsAsync<TDefaultDocument>();
         }
 
         /// <summary>
@@ -2545,9 +2548,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="query">The query (usually a QueryDocument or constructed using the Query builder).</param>
         /// <returns>A TDefaultDocument (or null if not found).</returns>
-        public virtual TDefaultDocument FindOne(IMongoQuery query)
+        public virtual Task<TDefaultDocument> FindOneAsync(IMongoQuery query)
         {
-            return FindOneAs<TDefaultDocument>(query);
+            return FindOneAsAsync<TDefaultDocument>(query);
         }
 
         /// <summary>
@@ -2555,9 +2558,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="id">The id of the document.</param>
         /// <returns>A TDefaultDocument (or null if not found).</returns>
-        public virtual TDefaultDocument FindOneById(BsonValue id)
+        public virtual Task<TDefaultDocument> FindOneByIdAsync(BsonValue id)
         {
-            return FindOneByIdAs<TDefaultDocument>(id);
+            return FindOneByIdAsAsync<TDefaultDocument>(id);
         }
 
         /// <summary>
@@ -2568,12 +2571,12 @@ namespace MongoDB.Driver
         /// <param name="options">The options for the geoHaystack search (null if none).</param>
         /// <returns>A <see cref="GeoHaystackSearchResult{TDocument}"/>.</returns>
         [Obsolete("Use the overload of GeoHaystackSearch that has a GeoHaystackSearchArgs parameter instead.")]
-        public virtual GeoHaystackSearchResult<TDefaultDocument> GeoHaystackSearch(
+        public virtual Task<GeoHaystackSearchResult<TDefaultDocument>> GeoHaystackSearchAsync(
             double x,
             double y,
             IMongoGeoHaystackSearchOptions options)
         {
-            return GeoHaystackSearchAs<TDefaultDocument>(x, y, options);
+            return GeoHaystackSearchAsAsync<TDefaultDocument>(x, y, options);
         }
 
         /// <summary>
@@ -2581,9 +2584,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="GeoHaystackSearchResult{TDocument}"/>.</returns>
-        public virtual GeoHaystackSearchResult<TDefaultDocument> GeoHaystackSearch(GeoHaystackSearchArgs args)
+        public virtual Task<GeoHaystackSearchResult<TDefaultDocument>> GeoHaystackSearchAsync(GeoHaystackSearchArgs args)
         {
-            return GeoHaystackSearchAs<TDefaultDocument>(args);
+            return GeoHaystackSearchAsAsync<TDefaultDocument>(args);
         }
 
         /// <summary>
@@ -2591,9 +2594,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>A <see cref="GeoNearResult{TDefaultDocument}"/>.</returns>
-        public virtual GeoNearResult<TDefaultDocument> GeoNear(GeoNearArgs args)
+        public virtual Task<GeoNearResult<TDefaultDocument>> GeoNearAsync(GeoNearArgs args)
         {
-            return GeoNearAs<TDefaultDocument>(args);
+            return GeoNearAsAsync<TDefaultDocument>(args);
         }
 
         /// <summary>
@@ -2605,9 +2608,9 @@ namespace MongoDB.Driver
         /// <param name="limit">The maximum number of results returned.</param>
         /// <returns>A <see cref="GeoNearResult{TDefaultDocument}"/>.</returns>
         [Obsolete("Use the overload of GeoNear that takes a GeoNearArgs parameter instead.")]
-        public virtual GeoNearResult<TDefaultDocument> GeoNear(IMongoQuery query, double x, double y, int limit)
+        public virtual Task<GeoNearResult<TDefaultDocument>> GeoNearAsync(IMongoQuery query, double x, double y, int limit)
         {
-            return GeoNearAs<TDefaultDocument>(query, x, y, limit);
+            return GeoNearAsAsync<TDefaultDocument>(query, x, y, limit);
         }
 
         /// <summary>
@@ -2620,14 +2623,14 @@ namespace MongoDB.Driver
         /// <param name="options">Options for the GeoNear command (see <see cref="GeoNearOptionsDocument"/>, <see cref="GeoNearOptionsWrapper"/>, and the <see cref="GeoNearOptions"/> builder).</param>
         /// <returns>A <see cref="GeoNearResult{TDefaultDocument}"/>.</returns>
         [Obsolete("Use the overload of GeoNear that takes a GeoNearArgs parameter instead.")]
-        public virtual GeoNearResult<TDefaultDocument> GeoNear(
+        public virtual Task<GeoNearResult<TDefaultDocument>> GeoNearAsync(
             IMongoQuery query,
             double x,
             double y,
             int limit,
             IMongoGeoNearOptions options)
         {
-            return GeoNearAs<TDefaultDocument>(query, x, y, limit, options);
+            return GeoNearAsAsync<TDefaultDocument>(query, x, y, limit, options);
         }
 
         /// <summary>
@@ -2635,9 +2638,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="document">The document to insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert(TDefaultDocument document)
+        public virtual Task<WriteConcernResult> InsertAsync(TDefaultDocument document)
         {
-            return Insert<TDefaultDocument>(document);
+            return InsertAsync<TDefaultDocument>(document);
         }
 
         /// <summary>
@@ -2646,9 +2649,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to insert.</param>
         /// <param name="options">The options to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert(TDefaultDocument document, MongoInsertOptions options)
+        public virtual Task<WriteConcernResult> InsertAsync(TDefaultDocument document, MongoInsertOptions options)
         {
-            return Insert<TDefaultDocument>(document, options);
+            return InsertAsync<TDefaultDocument>(document, options);
         }
 
         /// <summary>
@@ -2657,9 +2660,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to insert.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Insert(TDefaultDocument document, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> InsertAsync(TDefaultDocument document, WriteConcern writeConcern)
         {
-            return Insert<TDefaultDocument>(document, writeConcern);
+            return InsertAsync<TDefaultDocument>(document, writeConcern);
         }
 
         /// <summary>
@@ -2667,9 +2670,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="documents">The documents to insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch(IEnumerable<TDefaultDocument> documents)
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync(IEnumerable<TDefaultDocument> documents)
         {
-            return InsertBatch<TDefaultDocument>(documents);
+            return InsertBatchAsync<TDefaultDocument>(documents);
         }
 
         /// <summary>
@@ -2678,11 +2681,11 @@ namespace MongoDB.Driver
         /// <param name="documents">The documents to insert.</param>
         /// <param name="options">The options to use for this Insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch(
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync(
             IEnumerable<TDefaultDocument> documents,
             MongoInsertOptions options)
         {
-            return InsertBatch<TDefaultDocument>(documents, options);
+            return InsertBatchAsync<TDefaultDocument>(documents, options);
         }
 
         /// <summary>
@@ -2691,11 +2694,11 @@ namespace MongoDB.Driver
         /// <param name="documents">The documents to insert.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A list of WriteConcernResults (or null if WriteConcern is disabled).</returns>
-        public virtual IEnumerable<WriteConcernResult> InsertBatch(
+        public virtual Task<IEnumerable<WriteConcernResult>> InsertBatchAsync(
             IEnumerable<TDefaultDocument> documents,
             WriteConcern writeConcern)
         {
-            return InsertBatch<TDefaultDocument>(documents, writeConcern);
+            return InsertBatchAsync<TDefaultDocument>(documents, writeConcern);
         }
 
         /// <summary>
@@ -2703,9 +2706,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>Multiple enumerators, one for each cursor.</returns>
-        public virtual ReadOnlyCollection<IEnumerator<TDefaultDocument>> ParallelScan(ParallelScanArgs args)
+        public virtual Task<ReadOnlyCollection<IEnumerator<TDefaultDocument>>> ParallelScanAsync(ParallelScanArgs args)
         {
-            return ParallelScanAs<TDefaultDocument>(args);
+            return ParallelScanAsAsync<TDefaultDocument>(args);
         }
 
         /// <summary>
@@ -2714,9 +2717,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="document">The document to save.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save(TDefaultDocument document)
+        public virtual Task<WriteConcernResult> SaveAsync(TDefaultDocument document)
         {
-            return Save<TDefaultDocument>(document);
+            return SaveAsync<TDefaultDocument>(document);
         }
 
         /// <summary>
@@ -2726,9 +2729,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to save.</param>
         /// <param name="options">The options to use for this Save.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save(TDefaultDocument document, MongoInsertOptions options)
+        public virtual Task<WriteConcernResult> SaveAsync(TDefaultDocument document, MongoInsertOptions options)
         {
-            return Save<TDefaultDocument>(document, options);
+            return SaveAsync<TDefaultDocument>(document, options);
         }
 
         /// <summary>
@@ -2738,9 +2741,9 @@ namespace MongoDB.Driver
         /// <param name="document">The document to save.</param>
         /// <param name="writeConcern">The write concern to use for this Insert.</param>
         /// <returns>A WriteConcernResult (or null if WriteConcern is disabled).</returns>
-        public virtual WriteConcernResult Save(TDefaultDocument document, WriteConcern writeConcern)
+        public virtual Task<WriteConcernResult> SaveAsync(TDefaultDocument document, WriteConcern writeConcern)
         {
-            return Save<TDefaultDocument>(document, writeConcern);
+            return SaveAsync<TDefaultDocument>(document, writeConcern);
         }
     }
 }

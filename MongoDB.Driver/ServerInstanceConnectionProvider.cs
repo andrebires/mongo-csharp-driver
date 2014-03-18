@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -37,9 +38,9 @@ namespace MongoDB.Driver
         /// <returns>
         /// A connection.
         /// </returns>
-        public MongoConnection AcquireConnection()
+        public Task<MongoConnection> AcquireConnectionAsync()
         {
-            return _serverInstance.AcquireConnection();
+            return Task.FromResult(_serverInstance.AcquireConnection());
         }
 
         /// <summary>

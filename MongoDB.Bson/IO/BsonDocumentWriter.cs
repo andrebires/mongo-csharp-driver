@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Threading.Tasks;
 
 namespace MongoDB.Bson.IO
 {
@@ -73,9 +74,10 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Flushes any pending data to the output destination.
         /// </summary>
-        public override void Flush()
+        public override Task FlushAsync()
         {
             if (Disposed) { throw new ObjectDisposedException("BsonDocumentWriter"); }
+            return Task.FromResult(0);
         }
 
         /// <summary>

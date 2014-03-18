@@ -321,7 +321,7 @@ namespace MongoDB.Driver.Internal
                     var connection = new MongoConnection(this);
                     try
                     {
-                        connection.Open();
+                        connection.OpenAsync().Wait();
 
                         // compare against MaxConnectionPoolSize instead of MinConnectionPoolSize
                         // because while we were opening this connection many others may have already been created

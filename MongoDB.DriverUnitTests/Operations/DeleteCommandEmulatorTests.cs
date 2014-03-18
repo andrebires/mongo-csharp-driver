@@ -53,9 +53,9 @@ namespace MongoDB.DriverUnitTests.Operations
             try
             {
                 _collection.Drop();
-                _collection.Insert(new BsonDocument("_id", 1));
-                _collection.Insert(new BsonDocument("_id", 2));
-                _collection.Insert(new BsonDocument("_id", 3));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 1));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 2));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 3));
 
                 var deletes = new[]
                 {
@@ -98,8 +98,8 @@ namespace MongoDB.DriverUnitTests.Operations
             try
             {
                 _collection.Drop();
-                _collection.Insert(new BsonDocument("_id", 1));
-                _collection.Insert(new BsonDocument("_id", 2));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 1));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 2));
 
                 var deletes = new[] { new DeleteRequest(Query.Null) }; // defaults to Limit=1
                 var operation = CreateOperation(connection, _collection, deletes);
@@ -127,9 +127,9 @@ namespace MongoDB.DriverUnitTests.Operations
             try
             {
                 _collection.Drop();
-                _collection.Insert(new BsonDocument("_id", 1));
-                _collection.Insert(new BsonDocument("_id", 2));
-                _collection.Insert(new BsonDocument("_id", 3));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 1));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 2));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 3));
 
                 var deletes = new[]
                 {
@@ -172,9 +172,9 @@ namespace MongoDB.DriverUnitTests.Operations
             try
             {
                 _collection.Drop();
-                _collection.Insert(new BsonDocument("_id", 1));
-                _collection.Insert(new BsonDocument("_id", 2));
-                _collection.Insert(new BsonDocument("_id", 3));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 1));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 2));
+                _collection.InsertAsyncAsync(new BsonDocument("_id", 3));
 
                 var deletes = new[] { new DeleteRequest(Query.EQ("_id", 1)), new DeleteRequest(Query.EQ("_id", 2)) };
                 var operation = CreateOperation(connection, _collection, deletes);

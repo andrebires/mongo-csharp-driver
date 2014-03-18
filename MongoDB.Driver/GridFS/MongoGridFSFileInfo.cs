@@ -24,6 +24,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Builders;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.GridFS
 {
@@ -447,7 +448,7 @@ namespace MongoDB.Driver.GridFS
 
             // bind to one of the nodes using the ReadPreference
             var server = gridFS.Server;
-            using (server.RequestStart(null, gridFS.Settings.ReadPreference))
+            using (server.RequestStartAsync(null, gridFS.Settings.ReadPreference))
             {
                 return server.RequestConnection.ServerInstance;
             }
@@ -469,7 +470,7 @@ namespace MongoDB.Driver.GridFS
         /// </summary>
         /// <param name="destFileName">The destination file name.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo CopyTo(string destFileName)
+        public Task<MongoGridFSFileInfo> CopyToAsync(string destFileName)
         {
             // copy all createOptions except Aliases (which are considered alternate filenames)
             var createOptions = new MongoGridFSCreateOptions
@@ -479,7 +480,7 @@ namespace MongoDB.Driver.GridFS
                 Metadata = _metadata,
                 UploadDate = _uploadDate
             };
-            return CopyTo(destFileName, createOptions);
+            return CopyToAsync(destFileName, createOptions);
         }
 
         /// <summary>
@@ -488,7 +489,7 @@ namespace MongoDB.Driver.GridFS
         /// <param name="destFileName">The destination file name.</param>
         /// <param name="createOptions">The create options.</param>
         /// <returns>The file info of the new GridFS file.</returns>
-        public MongoGridFSFileInfo CopyTo(string destFileName, MongoGridFSCreateOptions createOptions)
+        public Task<MongoGridFSFileInfo> CopyToAsync(string destFileName, MongoGridFSCreateOptions createOptions)
         {
             EnsureServerInstanceIsPrimary();
             using (_server.RequestStart(null, _serverInstance))
@@ -498,7 +499,7 @@ namespace MongoDB.Driver.GridFS
                 // because that would lock the database for too long
                 var gridFS = new MongoGridFS(_server, _databaseName, _settings);
                 var stream = OpenRead();
-                return gridFS.Upload(stream, destFileName, createOptions);
+                return gridFS.UploadAsync(stream, destFileName, createOptions);
             }
         }
 
@@ -530,7 +531,7 @@ namespace MongoDB.Driver.GridFS
             using (_server.RequestStart(null, _serverInstance))
             {
                 var gridFS = new MongoGridFS(_server, _databaseName, _settings);
-                gridFS.EnsureIndexes();
+                gridFS.EnsureIndexesAsync();
 
                 if (Exists)
                 {
@@ -538,8 +539,8 @@ namespace MongoDB.Driver.GridFS
                     var filesCollection = gridFS.GetFilesCollection(database);
                     var chunksCollection = gridFS.GetChunksCollection(database);
 
-                    filesCollection.Remove(Query.EQ("_id", _id), gridFS.Settings.WriteConcern);
-                    chunksCollection.Remove(Query.EQ("files_id", _id), gridFS.Settings.WriteConcern);
+                    filesCollection.RemoveAsync(Query.EQ("_id", _id), gridFS.Settings.WriteConcern);
+                    chunksCollection.RemoveAsync(Query.EQ("files_id", _id), gridFS.Settings.WriteConcern);
                 }
             }
         }
@@ -599,7 +600,7 @@ namespace MongoDB.Driver.GridFS
         /// Moves the most recent version of a GridFS file.
         /// </summary>
         /// <param name="destFileName">The destination file name.</param>
-        public void MoveTo(string destFileName)
+        public async Task MoveToAsync(string destFileName)
         {
             EnsureServerInstanceIsPrimary();
             using (_server.RequestStart(null, _serverInstance))
@@ -609,7 +610,7 @@ namespace MongoDB.Driver.GridFS
                 var filesCollection = gridFS.GetFilesCollection(database);
                 var query = Query.EQ("_id", _id);
                 var update = Update.Set("filename", destFileName);
-                filesCollection.Update(query, update);
+                await filesCollection.UpdateAsync(query, update).ConfigureAwait(false);
             }
         }
 

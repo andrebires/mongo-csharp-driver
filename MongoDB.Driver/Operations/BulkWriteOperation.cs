@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -41,9 +42,9 @@ namespace MongoDB.Driver
         /// Executes the bulk operation using the default write concern from the collection.
         /// </summary>
         /// <returns>A BulkWriteResult.</returns>
-        public BulkWriteResult Execute()
+        public Task<BulkWriteResult> ExecuteAsync()
         {
-            return ExecuteHelper(null);
+            return ExecuteHelperAsync(null);
         }
 
         /// <summary>
@@ -51,13 +52,13 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="writeConcern">The write concern for this bulk operation.</param>
         /// <returns>A BulkWriteResult.</returns>
-        public BulkWriteResult Execute(WriteConcern writeConcern)
+        public Task<BulkWriteResult> ExecuteAsync(WriteConcern writeConcern)
         {
             if (writeConcern == null)
             {
                 throw new ArgumentNullException("writeConcern");
             }
-            return ExecuteHelper(writeConcern);
+            return ExecuteHelperAsync(writeConcern);
         }
 
         /// <summary>
@@ -103,7 +104,7 @@ namespace MongoDB.Driver
             _requests.Add(request);
         }
 
-        private BulkWriteResult ExecuteHelper(WriteConcern writeConcern)
+        private Task<BulkWriteResult> ExecuteHelperAsync(WriteConcern writeConcern)
         {
             if (_hasBeenExecuted)
             {
@@ -117,7 +118,7 @@ namespace MongoDB.Driver
                 WriteConcern = writeConcern,
                 Requests = _requests
             };
-            return _collection.BulkWrite(args);
+            return _collection.BulkWriteAsync(args);
         }
     }
 }

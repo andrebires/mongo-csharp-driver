@@ -45,10 +45,10 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp215
         [Test]
         public void TestSave()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
 
             var doc = new C { X = 1 };
-            _collection.Save(doc);
+            _collection.SaveAsyncAsyncAsync(doc);
             var id = doc.Id;
 
             Assert.AreEqual(1, _collection.Count());
@@ -57,7 +57,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp215
             Assert.AreEqual(1, fetched.X);
 
             doc.X = 2;
-            _collection.Save(doc);
+            _collection.SaveAsyncAsyncAsync(doc);
 
             Assert.AreEqual(1, _collection.Count());
             fetched = _collection.FindOne();

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Internal
 {
@@ -27,7 +28,9 @@ namespace MongoDB.Driver.Internal
     internal abstract class MultipleInstanceMongoServerProxy : IMongoServerProxy
     {
         // private fields
-        private readonly object _lock = new object();
+        //private readonly object _lock = new object();
+
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
         private readonly ConnectedInstanceCollection _connectedInstances;
         private readonly List<MongoServerInstance> _instances;
         private readonly MongoServerSettings _settings;
@@ -90,7 +93,7 @@ namespace MongoDB.Driver.Internal
         {
             get
             {
-                var instance = ChooseServerInstance(ReadPreference.Primary);
+                var instance = ChooseServerInstanceAsync(ReadPreference.Primary).Result;
                 return instance == null
                     ? null
                     : instance.BuildInfo;
@@ -104,9 +107,16 @@ namespace MongoDB.Driver.Internal
         {
             get
             {
-                lock (_lock)
+                
+                //lock (_lock)
+                _semaphore.Wait();
+                try
                 {
                     return _connectionAttempt;
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
         }
@@ -118,9 +128,15 @@ namespace MongoDB.Driver.Internal
         {
             get
             {
-                lock (_lock)
+                //lock (_lock)
+                _semaphore.Wait();
+                try
                 {
                     return _instances.ToList().AsReadOnly();
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
         }
@@ -137,9 +153,15 @@ namespace MongoDB.Driver.Internal
         {
             get
             {
-                lock (_lock)
+                //lock (_lock)
+                _semaphore.Wait();
+                try
                 {
                     return _state;
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
         }
@@ -159,7 +181,7 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>A MongoServerInstance.</returns>
-        public MongoServerInstance ChooseServerInstance(ReadPreference readPreference)
+        public async Task<MongoServerInstance> ChooseServerInstanceAsync(ReadPreference readPreference)
         {
             for (int attempt = 1; attempt <= 2; attempt++)
             {
@@ -176,7 +198,7 @@ namespace MongoDB.Driver.Internal
                 }
                 if (attempt == 1)
                 {
-                    Connect(_settings.ConnectTimeout, readPreference);
+                    await ConnectAsync(_settings.ConnectTimeout, readPreference);
                 }
             }
 
@@ -188,7 +210,7 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         /// <param name="timeout">The timeout.</param>
         /// <param name="readPreference">The read preference.</param>
-        public void Connect(TimeSpan timeout, ReadPreference readPreference)
+        public async Task ConnectAsync(TimeSpan timeout, ReadPreference readPreference)
         {
             var timeoutAt = DateTime.UtcNow + timeout;
             while (DateTime.UtcNow < timeoutAt)
@@ -200,11 +222,12 @@ namespace MongoDB.Driver.Internal
 
                 if (Interlocked.CompareExchange(ref _outstandingInstanceConnections, 0, 0) > 0)
                 {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(20));
+                    await Task.Delay(TimeSpan.FromMilliseconds(20));
                     continue;
                 }
 
-                lock (_lock)
+                //lock (_lock)
+                
                 {
                     // test this again (kinda like the double lock check pattern).  This value may
                     // be different and we don't want to issue another round of connects needlessly.
@@ -227,7 +250,7 @@ namespace MongoDB.Driver.Internal
 
                     foreach (var instance in _instances)
                     {
-                        ConnectInstance(instance);
+                        await ConnectInstanceAsync(instance).ConfigureAwait(false);
                     }
                 }
             }
@@ -240,7 +263,9 @@ namespace MongoDB.Driver.Internal
         /// </summary>
         public void Disconnect()
         {
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 if (_state == MongoServerState.Disconnected || _state == MongoServerState.Disconnecting)
                 {
@@ -265,34 +290,50 @@ namespace MongoDB.Driver.Internal
                     _state = MongoServerState.Disconnected;
                 }
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         /// <summary>
         /// Checks whether the server is alive (throws an exception if not).
         /// </summary>
-        public void Ping()
+        public async Task PingAsync()
         {
             List<MongoServerInstance> instances;
-            lock (_lock)
+            //lock (_lock)
+            await _semaphore.WaitAsync().ConfigureAwait(false);
+            try
             {
                 instances = _instances.ToList();
+            }
+            finally
+            {
+                _semaphore.Release();
             }
 
             foreach (var instance in instances)
             {
-                instance.Ping();
+                await instance.PingAsync();
             }
         }
 
         /// <summary>
         /// Verifies the state of the server.
         /// </summary>
-        public void VerifyState()
+        public async Task VerifyStateAsync()
         {
             List<MongoServerInstance> instances;
-            lock (_lock)
+            //lock (_lock)
+            await _semaphore.WaitAsync().ConfigureAwait(false);
+            try
             {
                 instances = _instances.ToList();
+            }
+            finally
+            {
+                _semaphore.Release();
             }
 
             if (instances.Count == 0)
@@ -305,7 +346,7 @@ namespace MongoDB.Driver.Internal
             {
                 try
                 {
-                    instance.VerifyState();
+                    await instance.VerifyStateAsync();
                 }
                 catch (Exception ex)
                 {
@@ -348,7 +389,9 @@ namespace MongoDB.Driver.Internal
                 throw new ArgumentNullException("address");
             }
 
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 if (!_instances.Any(x => x.Address == address))
                 {
@@ -356,9 +399,13 @@ namespace MongoDB.Driver.Internal
                     AddInstance(instance);
                     if (_state != MongoServerState.Disconnecting && _state != MongoServerState.Disconnected)
                     {
-                        ConnectInstance(instance);
+                        ConnectInstanceAsync(instance);
                     }
                 }
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
@@ -377,7 +424,9 @@ namespace MongoDB.Driver.Internal
         /// <param name="addresses">The addresses.</param>
         protected void MakeInstancesMatchAddresses(IEnumerable<MongoServerAddress> addresses)
         {
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 for (int i = _instances.Count - 1; i >= 0; i--)
                 {
@@ -394,6 +443,10 @@ namespace MongoDB.Driver.Internal
                         EnsureInstanceWithAddress(address);
                     }
                 }
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
@@ -414,22 +467,28 @@ namespace MongoDB.Driver.Internal
         // private methods
         private void AddInstance(MongoServerInstance instance)
         {
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 _instances.Add(instance);
                 instance.StateChanged += InstanceStateChanged;
                 ProcessInstanceStateChange(instance);
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
-        private void ConnectInstance(MongoServerInstance instance)
+        private Task ConnectInstanceAsync(MongoServerInstance instance)
         {
             Interlocked.Increment(ref _outstandingInstanceConnections);
-            ThreadPool.QueueUserWorkItem(_ =>
+            ThreadPool.QueueUserWorkItem(async _ =>
             {
                 try
                 {
-                    instance.Connect();
+                    await instance.ConnectAsync();
                 }
                 catch
                 {
@@ -440,6 +499,8 @@ namespace MongoDB.Driver.Internal
                     Interlocked.Decrement(ref _outstandingInstanceConnections);
                 }
             });
+
+            return Task.FromResult(0);
         }
 
         private void InstanceStateChanged(object sender, EventArgs e)
@@ -449,7 +510,9 @@ namespace MongoDB.Driver.Internal
 
         private void ProcessInstanceStateChange(MongoServerInstance instance)
         {
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 if (_instances.Contains(instance))
                 {
@@ -491,26 +554,42 @@ namespace MongoDB.Driver.Internal
 
                 _state = DetermineServerState(_state, _instances);
             }
+            finally
+            {
+                _semaphore.Release();   
+            }
         }
 
         private void RemoveInstance(MongoServerInstance instance)
         {
             _connectedInstances.Remove(instance);
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 _instances.Remove(instance);
                 instance.StateChanged -= InstanceStateChanged;
                 instance.DisconnectPermanently();
                 ProcessInstanceStateChange(instance);
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         private void ThrowConnectionException(ReadPreference readPreference)
         {
             List<Exception> exceptions;
-            lock (_lock)
+            //lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 exceptions = _instances.Select(x => x.ConnectException).Where(x => x != null).ToList();
+            }
+            finally
+            {
+                _semaphore.Release();
             }
             var firstException = exceptions.FirstOrDefault();
             string message;

@@ -21,6 +21,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Support;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Operations
 {
@@ -73,7 +74,7 @@ namespace MongoDB.Driver.Operations
         }
 
         // public methods
-        public BulkWriteResult Execute(MongoConnection connection)
+        public async Task<BulkWriteResult> ExecuteAsync(MongoConnection connection)
         {
             var batchResults = new List<BulkWriteBatchResult>();
             var remainingRequests = Enumerable.Empty<WriteRequest>();
@@ -90,7 +91,7 @@ namespace MongoDB.Driver.Operations
                     continue;
                 }
 
-                var batchResult = ExecuteBatch(connection, run);
+                var batchResult = await ExecuteBatchAsync(connection, run).ConfigureAwait(false);
                 batchResults.Add(batchResult);
 
                 hasWriteErrors |= batchResult.HasWriteErrors;
@@ -106,7 +107,7 @@ namespace MongoDB.Driver.Operations
         }
 
         // private methods
-        private BulkWriteBatchResult ExecuteBatch(MongoConnection connection, Run run)
+        private async Task<BulkWriteBatchResult> ExecuteBatchAsync(MongoConnection connection, Run run)
         {
             BulkWriteResult result;
             BulkWriteException exception = null;
@@ -115,13 +116,13 @@ namespace MongoDB.Driver.Operations
                 switch (run.RequestType)
                 {
                     case WriteRequestType.Delete:
-                        result = ExecuteDeletes(connection, run.Requests.Cast<DeleteRequest>());
+                        result = await ExecuteDeletesAsync(connection, run.Requests.Cast<DeleteRequest>()).ConfigureAwait(false);
                         break;
                     case WriteRequestType.Insert:
-                        result = ExecuteInserts(connection, run.Requests.Cast<InsertRequest>());
+                        result = await ExecuteInsertsAsync(connection, run.Requests.Cast<InsertRequest>()).ConfigureAwait(false);
                         break;
                     case WriteRequestType.Update:
-                        result = ExecuteUpdates(connection, run.Requests.Cast<UpdateRequest>());
+                        result = await ExecuteUpdatesAsync(connection, run.Requests.Cast<UpdateRequest>()).ConfigureAwait(false);
                         break;
                     default:
                         throw new MongoInternalException("Unrecognized RequestType.");
@@ -136,7 +137,7 @@ namespace MongoDB.Driver.Operations
             return BulkWriteBatchResult.Create(result, exception, run.IndexMap);
         }
 
-        private BulkWriteResult ExecuteDeletes(MongoConnection connection, IEnumerable<DeleteRequest> requests)
+        private Task<BulkWriteResult> ExecuteDeletesAsync(MongoConnection connection, IEnumerable<DeleteRequest> requests)
         {
             var operation = new BulkDeleteOperation(new BulkDeleteOperationArgs(
                 _collectionName,
@@ -150,10 +151,10 @@ namespace MongoDB.Driver.Operations
                 requests,
                 _writeConcern,
                 _writerSettings));
-            return operation.Execute(connection);
+            return operation.ExecuteAsync(connection);
         }
 
-        private BulkWriteResult ExecuteInserts(MongoConnection connection, IEnumerable<InsertRequest> requests)
+        private Task<BulkWriteResult> ExecuteInsertsAsync(MongoConnection connection, IEnumerable<InsertRequest> requests)
         {
             var operation = new BulkInsertOperation(new BulkInsertOperationArgs(
                 _assignId,
@@ -169,10 +170,10 @@ namespace MongoDB.Driver.Operations
                 requests,
                 _writeConcern,
                 _writerSettings));
-            return operation.Execute(connection);
+            return operation.ExecuteAsync(connection);
         }
 
-        private BulkWriteResult ExecuteUpdates(MongoConnection connection, IEnumerable<UpdateRequest> requests)
+        private Task<BulkWriteResult> ExecuteUpdatesAsync(MongoConnection connection, IEnumerable<UpdateRequest> requests)
         {
             var operation = new BulkUpdateOperation(new BulkUpdateOperationArgs(
                 _checkElementNames,
@@ -187,7 +188,7 @@ namespace MongoDB.Driver.Operations
                 requests,
                 _writeConcern,
                 _writerSettings));
-            return operation.Execute(connection);
+            return operation.ExecuteAsync(connection);
         }
 
         private IEnumerable<Run> FindOrderedRuns()

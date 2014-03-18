@@ -41,7 +41,7 @@ namespace MongoDB.DriverUnitTests.CommandResults
         {
             // make sure collection exists and has exactly one document
             _collection.Drop();
-            _collection.Insert(new BsonDocument());
+            _collection.InsertAsyncAsync(new BsonDocument());
 
             var result = _collection.GetStats();
             Assert.IsTrue(result.Ok);

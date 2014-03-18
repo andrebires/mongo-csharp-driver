@@ -43,7 +43,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp77
 
             var classMap = new BsonClassMap<Foo>(cm => cm.AutoMap());
 
-            collection.RemoveAll();
+            collection.RemoveAllAsync();
             for (int i = 0; i < 10; i++)
             {
                 var foo = new Foo
@@ -52,7 +52,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp77
                     Name = string.Format("Foo-{0}", i),
                     Summary = string.Format("Summary for Foo-{0}", i)
                 };
-                collection.Save(foo);
+                collection.SaveAsyncAsyncAsync(foo);
                 var count = collection.Count();
                 Assert.AreEqual(i + 1, count);
             }

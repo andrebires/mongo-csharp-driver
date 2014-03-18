@@ -30,7 +30,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp361
             var collection = Configuration.TestCollection;
             collection.Drop();
 
-            collection.Insert(new BsonDocument("_id", 1));
+            collection.InsertAsyncAsync(new BsonDocument("_id", 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => { database.RenameCollection("test", ""); });
         }
     }

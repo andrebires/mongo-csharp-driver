@@ -49,8 +49,8 @@ namespace MongoDB.DriverUnitTests.Jira
 
             var t1 = new T1 { Id = Guid.NewGuid(), A = "T1.A", B = "T1.B" };
             var t2 = new T2 { Id = Guid.NewGuid(), A = "T2.A" };
-            collection.Insert(t1);
-            collection.Insert(t2);
+            collection.InsertAsyncAsync(t1);
+            collection.InsertAsyncAsync(t2);
 
             var query = from t in collection.AsQueryable()
                         where t is T1 && ((T1)t).B == "T1.B" 

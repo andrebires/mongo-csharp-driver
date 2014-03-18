@@ -24,6 +24,7 @@ using MongoDB.Driver.Builders;
 using MongoDB.Driver.GridFS;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver
 {
@@ -260,17 +261,17 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="user">The user.</param>
         [Obsolete("Use the new user management command 'createUser' or 'updateUser'.")]
-        public virtual void AddUser(MongoUser user)
+        public virtual Task AddUserAsync(MongoUser user)
         {
             using (RequestStart(ReadPreference.Primary))
             {
                 if (_server.RequestConnection.ServerInstance.Supports(FeatureId.UserManagementCommands))
                 {
-                    AddUserWithUserManagementCommands(user);
+                    return AddUserWithUserManagementCommandsAsync(user);
                 }
                 else
                 {
-                    AddUserWithInsert(user);
+                    return AddUserWithInsertAsync(user);
                 }
             }
         }
@@ -291,9 +292,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="collectionName">The name of the collection.</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult CreateCollection(string collectionName)
+        public virtual Task<CommandResult> CreateCollectionAsync(string collectionName)
         {
-            return CreateCollection(collectionName, null);
+            return CreateCollectionAsync(collectionName, null);
         }
 
         /// <summary>
@@ -303,14 +304,14 @@ namespace MongoDB.Driver
         /// <param name="collectionName">The name of the collection.</param>
         /// <param name="options">Options for creating this collection (usually a CollectionOptionsDocument or constructed using the CollectionOptions builder).</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult CreateCollection(string collectionName, IMongoCollectionOptions options)
+        public virtual Task<CommandResult> CreateCollectionAsync(string collectionName, IMongoCollectionOptions options)
         {
             var command = new CommandDocument("create", collectionName);
             if (options != null)
             {
                 command.Merge(options.ToBsonDocument());
             }
-            return RunCommandAs<CommandResult>(command);
+            return RunCommandAsAsync<CommandResult>(command);
         }
 
         /// <summary>
@@ -348,9 +349,9 @@ namespace MongoDB.Driver
         /// <summary>
         /// Drops a database.
         /// </summary>
-        public virtual void Drop()
+        public virtual Task DropAsync()
         {
-            _server.DropDatabase(_name);
+            return _server.DropDatabaseAsync(_name);
         }
 
         /// <summary>
@@ -358,12 +359,12 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="collectionName">The name of the collection to drop.</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult DropCollection(string collectionName)
+        public virtual async Task<CommandResult> DropCollectionAsync(string collectionName)
         {
             try
             {
                 var command = new CommandDocument("drop", collectionName);
-                var result = RunCommandAs<CommandResult>(command);
+                var result = await RunCommandAsAsync<CommandResult>(command).ConfigureAwait(false);
                 return result;
             }
             catch (MongoCommandException ex)
@@ -384,12 +385,12 @@ namespace MongoDB.Driver
         /// <param name="args">Optional arguments (only used when the code is a function with parameters).</param>
         /// <returns>The result of evaluating the code.</returns>
         [Obsolete("Use the overload of Eval that has an EvalArgs parameter instead.")]
-        public virtual BsonValue Eval(EvalFlags flags, BsonJavaScript code, params object[] args)
+        public virtual Task<BsonValue> EvalAsync(EvalFlags flags, BsonJavaScript code, params object[] args)
         {
             var mappedArgs = args.Select(a => BsonTypeMapper.MapToBsonValue(a));
             var @lock = ((flags & EvalFlags.NoLock) != 0) ? (bool?)false : null;
             var evalArgs = new EvalArgs { Code = code, Args = mappedArgs, Lock = @lock };
-            return Eval(evalArgs);
+            return EvalAsync(evalArgs);
         }
 
         /// <summary>
@@ -399,11 +400,11 @@ namespace MongoDB.Driver
         /// <param name="args">Optional arguments (only used when the code is a function with parameters).</param>
         /// <returns>The result of evaluating the code.</returns>
         [Obsolete("Use the overload of Eval that has an EvalArgs parameter instead.")]
-        public virtual BsonValue Eval(BsonJavaScript code, params object[] args)
+        public virtual Task<BsonValue> EvalAsync(BsonJavaScript code, params object[] args)
         {
             var mappedArgs = args.Select(a => BsonTypeMapper.MapToBsonValue(a));
             var evalArgs = new EvalArgs { Code = code, Args = mappedArgs };
-            return Eval(evalArgs);
+            return EvalAsync(evalArgs);
         }
 
         /// <summary>
@@ -411,7 +412,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="args">The args.</param>
         /// <returns>The result of evaluating the code.</returns>
-        public virtual BsonValue Eval(EvalArgs args)
+        public virtual async Task<BsonValue> EvalAsync(EvalArgs args)
         {
             if (args == null) { throw new ArgumentNullException("args"); }
             if (args.Code == null) { throw new ArgumentException("Code is null.", "args"); }
@@ -423,7 +424,7 @@ namespace MongoDB.Driver
                 { "nolock", () => !args.Lock.Value, args.Lock.HasValue }, // optional
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            var result = RunCommandAs<CommandResult>(command);
+            var result = await RunCommandAsAsync<CommandResult>(command).ConfigureAwait(false);
             return result.Response["retval"];
         }
 
@@ -471,13 +472,13 @@ namespace MongoDB.Driver
         /// </summary>
         /// <returns>An array of users.</returns>
         [Obsolete("Use the new user management command 'usersInfo'.")]
-        public virtual MongoUser[] FindAllUsers()
+        public virtual async Task<MongoUser[]> FindAllUsersAsync()
         {
             using (RequestStart(ReadPreference.Primary))
             {
                 if (_server.RequestConnection.ServerInstance.Supports(FeatureId.UserManagementCommands))
                 {
-                    return FindAllUsersWithUserManagementCommands();
+                    return await FindAllUsersWithUserManagementCommandsAsync().ConfigureAwait(false);
                 }
 
                 return FindAllUsersWithQuery();
@@ -490,16 +491,16 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <returns>The user.</returns>
         [Obsolete("Use the new user management command 'usersInfo'.")]
-        public virtual MongoUser FindUser(string username)
+        public virtual async Task<MongoUser> FindUserAsync(string username)
         {
             using (RequestStart(ReadPreference.Primary))
             {
                 if (_server.RequestConnection.ServerInstance.Supports(FeatureId.UserManagementCommands))
                 {
-                    return FindUserWithUserManagementCommands(username);
+                    return await FindUserWithUserManagementCommandsAsync(username).ConfigureAwait(false);
                 }
 
-                return FindUserWithQuery(username);
+                return await FindUserWithQueryAsync(username).ConfigureAwait(false);
             }
         }
 
@@ -677,10 +678,10 @@ namespace MongoDB.Driver
         /// Gets the current operation.
         /// </summary>
         /// <returns>The current operation.</returns>
-        public virtual BsonDocument GetCurrentOp()
+        public virtual Task<BsonDocument> GetCurrentOpAsync()
         {
             var collection = GetCollection("$cmd.sys.inprog");
-            return collection.FindOne();
+            return collection.FindOneAsync();
         }
 
         /// <summary>
@@ -700,13 +701,13 @@ namespace MongoDB.Driver
         /// Gets the last error (if any) that occurred on this connection. You MUST be within a RequestStart to call this method.
         /// </summary>
         /// <returns>The last error (<see cref=" GetLastErrorResult"/>)</returns>
-        public virtual GetLastErrorResult GetLastError()
+        public virtual Task<GetLastErrorResult> GetLastErrorAsync()
         {
             if (Server.RequestNestingLevel == 0)
             {
                 throw new InvalidOperationException("GetLastError can only be called if RequestStart has been called first.");
             }
-            return RunCommandAs<GetLastErrorResult>("getlasterror"); // use all lowercase for backward compatibility
+            return RunCommandAsAsync<GetLastErrorResult>("getlasterror"); // use all lowercase for backward compatibility
         }
 
         // TODO: mongo shell has GetPrevError at the database level?
@@ -729,10 +730,10 @@ namespace MongoDB.Driver
         /// Gets the current profiling level.
         /// </summary>
         /// <returns>The profiling level.</returns>
-        public GetProfilingLevelResult GetProfilingLevel()
+        public Task<GetProfilingLevelResult> GetProfilingLevelAsync()
         {
             var command = new CommandDocument("profile", -1);
-            return RunCommandAs<GetProfilingLevelResult>(command);
+            return RunCommandAsAsync<GetProfilingLevelResult>(command);
         }
 
         /// <summary>
@@ -749,9 +750,9 @@ namespace MongoDB.Driver
         /// Gets the current database stats.
         /// </summary>
         /// <returns>An instance of DatabaseStatsResult.</returns>
-        public virtual DatabaseStatsResult GetStats()
+        public virtual Task<DatabaseStatsResult> GetStatsAsync()
         {
-            return RunCommandAs<DatabaseStatsResult>("dbstats");
+            return RunCommandAsAsync<DatabaseStatsResult>("dbstats");
         }
 
         /// <summary>
@@ -812,12 +813,12 @@ namespace MongoDB.Driver
             {
                 if (_server.RequestConnection.ServerInstance.Supports(FeatureId.UserManagementCommands))
                 {
-                    RunCommand(new CommandDocument("dropUser", username));
+                    RunCommandAsync(new CommandDocument("dropUser", username));
                 }
                 else
                 {
                     var users = GetCollection("system.users");
-                    users.Remove(Query.EQ("user", username));
+                    users.RemoveAsync(Query.EQ("user", username));
                 }
             }
         }
@@ -828,9 +829,9 @@ namespace MongoDB.Driver
         /// <param name="oldCollectionName">The old name for the collection.</param>
         /// <param name="newCollectionName">The new name for the collection.</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult RenameCollection(string oldCollectionName, string newCollectionName)
+        public virtual Task<CommandResult> RenameCollectionAsync(string oldCollectionName, string newCollectionName)
         {
-            return RenameCollection(oldCollectionName, newCollectionName, false); // dropTarget = false
+            return RenameCollectionAsync(oldCollectionName, newCollectionName, false); // dropTarget = false
         }
 
         /// <summary>
@@ -840,7 +841,7 @@ namespace MongoDB.Driver
         /// <param name="newCollectionName">The new name for the collection.</param>
         /// <param name="dropTarget">Whether to drop the target collection first if it already exists.</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult RenameCollection(string oldCollectionName, string newCollectionName, bool dropTarget)
+        public virtual Task<CommandResult> RenameCollectionAsync(string oldCollectionName, string newCollectionName, bool dropTarget)
         {
             if (oldCollectionName == null)
             {
@@ -863,7 +864,7 @@ namespace MongoDB.Driver
                 { "dropTarget", dropTarget, dropTarget } // only added if dropTarget is true
             };
             var adminDatabase = _server.GetDatabase("admin");
-            return adminDatabase.RunCommandAs<CommandResult>(command);
+            return adminDatabase.RunCommandAsAsync<CommandResult>(command);
         }
 
         /// <summary>
@@ -896,7 +897,7 @@ namespace MongoDB.Driver
         [Obsolete("Use the overload of RequestStart that has a ReadPreference parameter instead.")]
         public virtual IDisposable RequestStart(bool slaveOk)
         {
-            return _server.RequestStart(this, ReadPreference.FromSlaveOk(slaveOk));
+            return _server.RequestStartAsync(this, ReadPreference.FromSlaveOk(slaveOk));
         }
 
         /// <summary>
@@ -908,7 +909,7 @@ namespace MongoDB.Driver
         /// <returns>A helper object that implements IDisposable and calls <see cref="RequestDone"/> from the Dispose method.</returns>
         public virtual IDisposable RequestStart(ReadPreference readPreference)
         {
-            return _server.RequestStart(this, readPreference);
+            return _server.RequestStartAsync(this, readPreference);
         }
 
         // TODO: mongo shell has ResetError at the database level
@@ -918,9 +919,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="command">The command object.</param>
         /// <returns>A CommandResult</returns>
-        public virtual CommandResult RunCommand(IMongoCommand command)
+        public virtual Task<CommandResult> RunCommandAsync(IMongoCommand command)
         {
-            return RunCommandAs<CommandResult>(command);
+            return RunCommandAsAsync<CommandResult>(command);
         }
 
         /// <summary>
@@ -928,9 +929,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="commandName">The name of the command.</param>
         /// <returns>A CommandResult</returns>
-        public virtual CommandResult RunCommand(string commandName)
+        public virtual Task<CommandResult> RunCommandAsync(string commandName)
         {
-            return RunCommandAs<CommandResult>(commandName);
+            return RunCommandAsAsync<CommandResult>(commandName);
         }
 
         /// <summary>
@@ -939,11 +940,11 @@ namespace MongoDB.Driver
         /// <typeparam name="TCommandResult">The type of the returned command result.</typeparam>
         /// <param name="command">The command object.</param>
         /// <returns>A TCommandResult</returns>
-        public virtual TCommandResult RunCommandAs<TCommandResult>(IMongoCommand command)
+        public virtual Task<TCommandResult> RunCommandAsAsync<TCommandResult>(IMongoCommand command)
             where TCommandResult : CommandResult
         {
             var resultSerializer = BsonSerializer.LookupSerializer(typeof(TCommandResult));
-            return RunCommandAs<TCommandResult>(command, resultSerializer, null);
+            return RunCommandAsAsync<TCommandResult>(command, resultSerializer, null);
         }
 
         /// <summary>
@@ -952,11 +953,11 @@ namespace MongoDB.Driver
         /// <typeparam name="TCommandResult">The type of the returned command result.</typeparam>
         /// <param name="commandName">The name of the command.</param>
         /// <returns>A TCommandResult</returns>
-        public virtual TCommandResult RunCommandAs<TCommandResult>(string commandName)
+        public virtual Task<TCommandResult> RunCommandAsAsync<TCommandResult>(string commandName)
             where TCommandResult : CommandResult
         {
             var command = new CommandDocument(commandName, 1);
-            return RunCommandAs<TCommandResult>(command);
+            return RunCommandAsAsync<TCommandResult>(command);
         }
 
         /// <summary>
@@ -989,9 +990,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="level">The profiling level.</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult SetProfilingLevel(ProfilingLevel level)
+        public virtual Task<CommandResult> SetProfilingLevelAsync(ProfilingLevel level)
         {
-            return SetProfilingLevel(level, TimeSpan.Zero);
+            return SetProfilingLevelAsync(level, TimeSpan.Zero);
         }
 
         /// <summary>
@@ -1000,14 +1001,14 @@ namespace MongoDB.Driver
         /// <param name="level">The profiling level.</param>
         /// <param name="slow">The threshold that defines a slow query.</param>
         /// <returns>A CommandResult.</returns>
-        public virtual CommandResult SetProfilingLevel(ProfilingLevel level, TimeSpan slow)
+        public virtual Task<CommandResult> SetProfilingLevelAsync(ProfilingLevel level, TimeSpan slow)
         {
             var command = new CommandDocument
             {
                 { "profile", (int) level },
                 { "slowms", slow.TotalMilliseconds, slow != TimeSpan.Zero } // optional
             };
-            return RunCommandAs<CommandResult>(command);
+            return RunCommandAsAsync<CommandResult>(command);
         }
 
         /// <summary>
@@ -1021,24 +1022,24 @@ namespace MongoDB.Driver
 
         // private methods
         #pragma warning disable 618
-        private void AddUserWithInsert(MongoUser user)
+        private async Task AddUserWithInsertAsync(MongoUser user)
         {
             var users = GetCollection("system.users");
-            var document = users.FindOne(Query.EQ("user", user.Username));
+            var document = await users.FindOneAsync(Query.EQ("user", user.Username)).ConfigureAwait(false);
             if (document == null)
             {
                 document = new BsonDocument("user", user.Username);
             }
             document["readOnly"] = user.IsReadOnly;
             document["pwd"] = user.PasswordHash;
-            users.Save(document);
+            await users.SaveAsync(document).ConfigureAwait(false);
         }
         #pragma warning restore
 
         #pragma warning disable 618
-        private void AddUserWithUserManagementCommands(MongoUser user)
+        private async Task AddUserWithUserManagementCommandsAsync(MongoUser user)
         {
-            var usersInfo = RunCommand(new CommandDocument("usersInfo", user.Username));
+            var usersInfo = await RunCommandAsync(new CommandDocument("usersInfo", user.Username)).ConfigureAwait(false);
 
             var roles = new BsonArray();
             if (_name == "admin")
@@ -1065,16 +1066,16 @@ namespace MongoDB.Driver
                 { "roles", roles }
             };
 
-            RunCommand(userCommand);
+            await RunCommandAsync(userCommand).ConfigureAwait(false);
         }
         #pragma warning restore
 
         #pragma warning disable 618
-        private MongoUser FindUserWithQuery(string username)
+        private async Task<MongoUser> FindUserWithQueryAsync(string username)
         {
             var users = GetCollection("system.users");
             var query = Query.EQ("user", username);
-            var document = users.FindOne(query);
+            var document = await users.FindOneAsync(query).ConfigureAwait(false);
             if (document != null)
             {
                 var passwordHash = document.GetValue("pwd", "").AsString;
@@ -1087,9 +1088,9 @@ namespace MongoDB.Driver
         #pragma warning restore
 
         #pragma warning disable 618
-        private MongoUser FindUserWithUserManagementCommands(string username)
+        private async Task<MongoUser> FindUserWithUserManagementCommandsAsync(string username)
         {
-            var usersInfoResult = RunCommand(new CommandDocument("usersInfo", username));
+            var usersInfoResult = await RunCommandAsync(new CommandDocument("usersInfo", username)).ConfigureAwait(false);
             if (usersInfoResult.Response.Contains("users") && usersInfoResult.Response["users"].AsBsonArray.Count > 0)
             {
                 return new MongoUser(username, new PasswordEvidence(""), false);
@@ -1117,10 +1118,10 @@ namespace MongoDB.Driver
         #pragma warning restore
 
         #pragma warning disable 618
-        private MongoUser[] FindAllUsersWithUserManagementCommands()
+        private async Task<MongoUser[]> FindAllUsersWithUserManagementCommandsAsync()
         {
             var results = new List<MongoUser>();
-            var usersInfoResult = RunCommand(new CommandDocument("usersInfo", 1));
+            var usersInfoResult = await RunCommandAsync(new CommandDocument("usersInfo", 1)).ConfigureAwait(false);
             if (usersInfoResult.Response.Contains("users"))
             {
                 foreach (var document in usersInfoResult.Response["users"].AsBsonArray)
@@ -1132,7 +1133,7 @@ namespace MongoDB.Driver
         }
         #pragma warning restore
 
-        private TCommandResult RunCommandAs<TCommandResult>(
+        private async Task<TCommandResult> RunCommandAsAsync<TCommandResult>(
             IMongoCommand command,
             IBsonSerializer resultSerializer,
             IBsonSerializationOptions resultSerializationOptions) where TCommandResult : CommandResult
@@ -1172,10 +1173,10 @@ namespace MongoDB.Driver
                 resultSerializationOptions,
                 resultSerializer);
 
-            var connection = _server.AcquireConnection(readPreference);
+            var connection = await _server.AcquireConnectionAsync(readPreference).ConfigureAwait(false);
             try
             {
-                return commandOperation.Execute(connection);
+                return await commandOperation.ExecuteAsync(connection).ConfigureAwait(false);
             }
             finally
             {

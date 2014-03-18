@@ -43,7 +43,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp475
             collection.Drop();
             
             var t1 = new T1 { A = "T1.A", B = "T1.B" };
-            collection.Insert(t1);
+            collection.InsertAsyncAsync(t1);
 
             var query = from t in collection.AsQueryable().OfType<T1>() select t.B;
             var results = query.ToList();

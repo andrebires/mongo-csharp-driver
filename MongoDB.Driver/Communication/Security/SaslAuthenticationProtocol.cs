@@ -17,6 +17,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Communication.Security
 {
@@ -53,7 +54,7 @@ namespace MongoDB.Driver.Communication.Security
         /// </summary>
         /// <param name="connection">The connection.</param>
         /// <param name="credential">The credential.</param>
-        public void Authenticate(MongoConnection connection, MongoCredential credential)
+        public async Task AuthenticateAsync(MongoConnection connection, MongoCredential credential)
         {
             using (var conversation = new SaslConversation())
             {
@@ -71,7 +72,7 @@ namespace MongoDB.Driver.Communication.Security
                     CommandResult result;
                     try
                     {
-                        result = RunCommand(connection, credential.Source, command);
+                        result = await RunCommandAsync(connection, credential.Source, command).ConfigureAwait(false);
                     }
                     catch (MongoCommandException ex)
                     {
@@ -116,7 +117,7 @@ namespace MongoDB.Driver.Communication.Security
         }
 
         // private methods
-        private CommandResult RunCommand(MongoConnection connection, string databaseName, IMongoCommand command)
+        private Task<CommandResult> RunCommandAsync(MongoConnection connection, string databaseName, IMongoCommand command)
         {
             var readerSettings = new BsonBinaryReaderSettings();
             var writerSettings = new BsonBinaryWriterSettings();
@@ -133,7 +134,7 @@ namespace MongoDB.Driver.Communication.Security
                 null, // serializationOptions
                 resultSerializer);
 
-            return commandOperation.Execute(connection);
+            return commandOperation.ExecuteAsync(connection);
         }
     }
 }

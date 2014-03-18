@@ -71,7 +71,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp378
             _collection.Drop();
 
             var doc = new C { Id = ObjectId.GenerateNewId().ToString(), X = 1 };
-            _collection.Insert(doc);
+            _collection.InsertAsyncAsync(doc);
             var id = doc.Id;
 
             Assert.AreEqual(1, _collection.Count());
@@ -80,7 +80,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp378
             Assert.AreEqual(1, fetched.X);
 
             doc.X = 2;
-            _collection.Save(doc);
+            _collection.SaveAsyncAsyncAsync(doc);
 
             Assert.AreEqual(1, _collection.Count());
             fetched = _collection.FindOne();
@@ -97,7 +97,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp378
 
             var id = new Guid("00112233-4455-6677-8899-aabbccddeeff");
             var doc = new D { Id = id, X = 1 };
-            collection.Insert(doc);
+            collection.InsertAsyncAsync(doc);
 
             Assert.AreEqual(1, collection.Count());
             var fetched = collection.FindOne();
@@ -105,7 +105,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp378
             Assert.AreEqual(1, fetched.X);
 
             doc.X = 2;
-            collection.Save(doc);
+            collection.SaveAsyncAsyncAsync(doc);
 
             Assert.AreEqual(1, collection.Count());
             fetched = collection.FindOne();

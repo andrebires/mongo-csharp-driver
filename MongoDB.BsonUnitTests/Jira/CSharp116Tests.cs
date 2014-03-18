@@ -23,14 +23,14 @@ namespace MongoDB.BsonUnitTests.Jira.CSharp116
     public class CSharp116Tests
     {
         [Test]
-        public void TestFlushAndClose()
+        public async Task TestFlushAndClose()
         {
             var stream = new MemoryStream();
             using (var bsonWriter = BsonWriter.Create(stream))
             {
                 bsonWriter.WriteStartDocument();
                 bsonWriter.WriteEndDocument();
-                bsonWriter.Flush();
+                bsonWriter.FlushAsync();
                 bsonWriter.Close();
             }
         }

@@ -33,10 +33,10 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp365
                 var collection = Configuration.TestCollection;
                 collection.Drop();
 
-                collection.CreateIndex("A", "_id");
-                collection.Insert(new BsonDocument { { "_id", 1 }, { "A", 1 } });
-                collection.Insert(new BsonDocument { { "_id", 2 }, { "A", 2 } });
-                collection.Insert(new BsonDocument { { "_id", 3 }, { "A", 3 } });
+                collection.CreateIndexAsync("A", "_id");
+                collection.InsertAsyncAsync(new BsonDocument { { "_id", 1 }, { "A", 1 } });
+                collection.InsertAsyncAsync(new BsonDocument { { "_id", 2 }, { "A", 2 } });
+                collection.InsertAsyncAsync(new BsonDocument { { "_id", 3 }, { "A", 3 } });
 
                 var query = Query.EQ("A", 1);
                 var fields = Fields.Include("_id");

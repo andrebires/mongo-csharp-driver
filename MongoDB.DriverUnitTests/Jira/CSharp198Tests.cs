@@ -55,13 +55,13 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp198
         [Test]
         public void TestSave()
         {
-            _collection.RemoveAll();
+            _collection.RemoveAllAsync();
             var foo1 = new Foo
             {
                 Id = new Id { AccountId = 1, Index = 2 },
                 Name = "foo1"
             };
-            _collection.Save(foo1);
+            _collection.SaveAsyncAsyncAsync(foo1);
 
             var foo1Rehydrated = _collection.FindOne(Query.EQ("_id", BsonDocumentWrapper.Create(foo1.Id)));
             Assert.IsInstanceOf<Foo>(foo1Rehydrated);
@@ -75,7 +75,7 @@ namespace MongoDB.DriverUnitTests.Jira.CSharp198
                 Id = new IdWithExtraField { AccountId = 3, Index = 4, Extra = 5 },
                 Name = "foo2"
             };
-            _collection.Save(foo2);
+            _collection.SaveAsyncAsyncAsync(foo2);
 
             var foo2Rehydrated = _collection.FindOne(Query.EQ("_id", BsonDocumentWrapper.Create(foo2.Id)));
             Assert.IsInstanceOf<Foo>(foo2Rehydrated);
