@@ -31,6 +31,7 @@ using MongoDB.Driver.Internal;
 using MongoDB.Driver.Operations;
 using MongoDB.Driver.Wrappers;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace MongoDB.Driver
 {
@@ -284,7 +285,7 @@ namespace MongoDB.Driver
         /// <param name="keys">The indexed fields (usually an IndexKeysDocument or constructed using the IndexKeys builder).</param>
         /// <param name="options">The index options(usually an IndexOptionsDocument or created using the IndexOption builder).</param>
         /// <returns>A WriteConcernResult.</returns>
-        public virtual Task<WriteConcernResult> CreateIndexAsync(IMongoIndexKeys keys, IMongoIndexOptions options)
+        public virtual async Task<WriteConcernResult> CreateIndexAsync(IMongoIndexKeys keys, IMongoIndexOptions options)
         {
             using (_database.RequestStart(ReadPreference.Primary))
             {
@@ -292,9 +293,9 @@ namespace MongoDB.Driver
                 {
                     try
                     {
-                        CreateIndexWithCommandAsync(keys, options);
+                        await CreateIndexWithCommandAsync(keys, options).ConfigureAwait(false);
                         var fakeResponse = new BsonDocument { { "ok", 1 }, { "n", 0 } };
-                        return Task.FromResult(new WriteConcernResult(fakeResponse));
+                        return new WriteConcernResult(fakeResponse);
                     }
                     catch (MongoCommandException ex)
                     {
@@ -305,7 +306,7 @@ namespace MongoDB.Driver
                 }
                 else
                 {
-                    return CreateIndexWithInsertAsync(keys, options);
+                    return await CreateIndexWithInsertAsync(keys, options).ConfigureAwait(false);
                 }
             }
         }

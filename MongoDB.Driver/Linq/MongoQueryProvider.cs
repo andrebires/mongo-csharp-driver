@@ -18,13 +18,14 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using MongoDB.Driver.Linq.Utils;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Linq
 {
     /// <summary>
     /// An implementation of IQueryProvider for querying a MongoDB collection.
     /// </summary>
-    public class MongoQueryProvider : IQueryProvider
+    public class MongoQueryProvider : IQueryProvider, IQueryProviderAsync
     {
         // private fields
         private MongoCollection _collection;
@@ -151,5 +152,42 @@ namespace MongoDB.Driver.Linq
             var translatedQuery = MongoQueryTranslator.Translate(this, expression);
             return translatedQuery.Execute();
         }
+
+        #region IQueryProviderAsync Members
+
+        public System.Threading.Tasks.Task<object> ExecuteAsync(Expression expression, System.Threading.CancellationToken cancellationToken)
+        {
+            if (expression == null)
+            {
+                throw new ArgumentNullException("expression");
+            }
+
+            var translatedQuery = MongoQueryTranslator.Translate(this, expression);
+            return translatedQuery.ExecuteAsync();
+        }
+
+        public async System.Threading.Tasks.Task<TResult> ExecuteAsync<TResult>(Expression expression, System.Threading.CancellationToken cancellationToken)
+        {
+            if (expression == null)
+            {
+                throw new ArgumentNullException("expression");
+            }
+            if (!typeof(TResult).IsAssignableFrom(expression.Type))
+            {
+                throw new ArgumentException("Argument expression is not valid.");
+            }
+
+            var result = await ExecuteAsync(expression, cancellationToken).ConfigureAwait(false);
+            if (result == null)
+            {
+                return default(TResult);
+            }
+            else
+            {
+                return (TResult)result;
+            }
+        }
+
+        #endregion
     }
 }

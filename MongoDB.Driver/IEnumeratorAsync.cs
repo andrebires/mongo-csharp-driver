@@ -11,15 +11,19 @@ namespace MongoDB.Driver
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IEnumeratorAsync<out T> : IEnumerator<T>
+    public interface IEnumeratorAsync<out T> : IEnumeratorAsync, IEnumerator<T>
     {
 
+    }
+
+
+    public interface IEnumeratorAsync : IEnumerator, IDisposable
+    {
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
         Task<bool> MoveNextAsync();
-
     }
 
     internal class EnumeratorAsyncWrapper<T> : IEnumeratorAsync<T>

@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Linq
 {
@@ -61,6 +62,15 @@ namespace MongoDB.Driver.Linq
         /// </summary>
         /// <returns>The result of executing the query.</returns>
         public virtual object Execute()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Executes a query that returns a single result (overridden by subclasses).
+        /// </summary>
+        /// <returns>The result of executing the query.</returns>
+        public virtual Task<object> ExecuteAsync()
         {
             throw new NotImplementedException();
         }

@@ -43,7 +43,7 @@
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\Debug\MongoDB.Driver.XML</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -95,6 +95,9 @@
     <Compile Include="IEnumerableAsync.cs" />
     <Compile Include="IEnumeratorAsync.cs" />
     <Compile Include="IEnumerableAsyncExtensions.cs" />
+    <Compile Include="Linq\IQueryProviderAsync.cs" />
+    <Compile Include="Linq\QueryableExtensions.cs" />
+    <Compile Include="Linq\Translators\EnumeratorAsyncWrapper.cs" />
     <Compile Include="Operations\ParallelScanOperation.cs" />
     <Compile Include="ParallelScanArgs.cs" />
     <Compile Include="WriteConcernError.cs" />

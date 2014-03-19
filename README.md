@@ -1,4 +1,10 @@
-## MongoDB C# Driver
+## MongoDB C# Driver - Async support
+
+EXPERIMENTAL CODE - USE AT YOUR OWN RISK
+
+Async version of the MongoDB official driver. Async LINQ support (ToListAsync, FirstOrDefaultAsync, etc.).
+
+---------------------------------------------
 
 documentation: http://www.mongodb.org/display/DOCS/CSharp+Language+Center
 apidoc: http://api.mongodb.org/csharp/

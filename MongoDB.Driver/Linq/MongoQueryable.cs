@@ -18,6 +18,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Linq
 {
@@ -26,7 +28,7 @@ namespace MongoDB.Driver.Linq
     /// This class has been named MongoQueryable instead of MongoQuery to avoid confusion with IMongoQuery.
     /// </summary>
     /// <typeparam name="T">The type of the documents being queried.</typeparam>
-    public class MongoQueryable<T> : IOrderedQueryable<T>
+    public class MongoQueryable<T> : IOrderedQueryable<T>, IEnumerableAsync<T>
     {
         // private fields
         private MongoQueryProvider _provider;
@@ -110,5 +112,47 @@ namespace MongoDB.Driver.Linq
         {
             get { return _provider; }
         }
+
+        #region IEnumerableAsync<T> Members
+
+        public async Task<IEnumeratorAsync<T>> GetEnumeratorAsync()
+        {
+            var result = await _provider.ExecuteAsync(_expression, CancellationToken.None).ConfigureAwait(false);
+
+            if (result is IEnumerableAsync<T>)
+            {
+                var enumerableResult = (IEnumerableAsync<T>)result;
+                return await enumerableResult.GetEnumeratorAsync().ConfigureAwait(false);
+
+            }
+            else
+            {
+                throw new ArgumentException("Provider result is not IEnumerableAsync");
+            }
+        }
+
+        #endregion
+
+        #region IEnumerableAsync Members
+
+        async Task<IEnumeratorAsync> IEnumerableAsync.GetEnumeratorAsync()
+        {
+            var result = await _provider.ExecuteAsync(_expression, CancellationToken.None).ConfigureAwait(false);
+
+            if (result is IEnumerableAsync)
+            {
+                var enumerableResult = (IEnumerableAsync)result;
+                return await enumerableResult.GetEnumeratorAsync().ConfigureAwait(false);
+
+            }
+            else
+            {
+                throw new ArgumentException("Provider result is not IEnumerableAsync");
+            }        
+
+            //return await ((IEnumerableAsync<T>)await _provider.ExecuteAsync(_expression, CancellationToken.None).ConfigureAwait(false)).GetEnumeratorAsync().ConfigureAwait(false);
+        }
+
+        #endregion
     }
 }

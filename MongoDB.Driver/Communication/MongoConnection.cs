@@ -153,34 +153,25 @@ namespace MongoDB.Driver.Internal
 
         // internal methods
         internal void Close()
-        {
-            //lock (_connectionLock)
-            _semaphore.Wait();
-            try
+        {            
+            if (_state != MongoConnectionState.Closed)
             {
-                if (_state != MongoConnectionState.Closed)
+                if (_stream != null)
                 {
-                    if (_stream != null)
-                    {
-                        try { _stream.Close(); } catch { } // ignore exceptions
-                        _stream = null;
-                    }
-                    if (_tcpClient != null)
-                    {
-                        if (_tcpClient.Connected)
-                        {
-                            // even though MSDN says TcpClient.Close doesn't close the underlying socket
-                            // it actually does (as proven by disassembling TcpClient and by experimentation)
-                            try { _tcpClient.Close(); } catch { } // ignore exceptions
-                        }
-                        _tcpClient = null;
-                    }
-                    _state = MongoConnectionState.Closed;
+                    try { _stream.Close(); } catch { } // ignore exceptions
+                    _stream = null;
                 }
-            }
-            finally
-            {
-                _semaphore.Release();
+                if (_tcpClient != null)
+                {
+                    if (_tcpClient.Connected)
+                    {
+                        // even though MSDN says TcpClient.Close doesn't close the underlying socket
+                        // it actually does (as proven by disassembling TcpClient and by experimentation)
+                        try { _tcpClient.Close(); } catch { } // ignore exceptions
+                    }
+                    _tcpClient = null;
+                }
+                _state = MongoConnectionState.Closed;
             }
         }
 
@@ -295,37 +286,32 @@ namespace MongoDB.Driver.Internal
 
         internal async Task SendMessageAsync(BsonBuffer buffer, int requestId)
         {
-            if (_state == MongoConnectionState.Closed) { throw new InvalidOperationException("Connection is closed."); }
+            if (_state == MongoConnectionState.Closed) { throw new InvalidOperationException("Connection is closed."); }            
+            await _semaphore.WaitAsync();
 
-            //lock (_connectionLock)
+            _lastUsedAt = DateTime.UtcNow;
+            _requestId = requestId;
+
+            try
             {
-                await _semaphore.WaitAsync();
-
-                _lastUsedAt = DateTime.UtcNow;
-                _requestId = requestId;
-
-                try
+                var networkStream = await GetNetworkStreamAsync().ConfigureAwait(false);
+                var writeTimeout = (int)_serverInstance.Settings.SocketTimeout.TotalMilliseconds;
+                if (writeTimeout != 0)
                 {
-                    var networkStream = await GetNetworkStreamAsync().ConfigureAwait(false);
-                    var writeTimeout = (int)_serverInstance.Settings.SocketTimeout.TotalMilliseconds;
-                    if (writeTimeout != 0)
-                    {
-                        networkStream.WriteTimeout = writeTimeout;
-                    }
-                    await buffer.WriteToAsync(networkStream).ConfigureAwait(false);
-                    _messageCounter++;
+                    networkStream.WriteTimeout = writeTimeout;
                 }
-                catch (Exception ex)
-                {
-                    HandleException(ex);
-                    throw;
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
+                await buffer.WriteToAsync(networkStream).ConfigureAwait(false);
+                _messageCounter++;
             }
-
+            catch (Exception ex)
+            {
+                HandleException(ex);
+                throw;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }          
         }
 
         internal async Task SendMessageAsync(MongoRequestMessage message)

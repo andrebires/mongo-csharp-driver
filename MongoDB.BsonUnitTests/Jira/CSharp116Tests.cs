@@ -16,6 +16,7 @@
 using System.IO;
 using MongoDB.Bson.IO;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace MongoDB.BsonUnitTests.Jira.CSharp116
 {
@@ -30,7 +31,7 @@ namespace MongoDB.BsonUnitTests.Jira.CSharp116
             {
                 bsonWriter.WriteStartDocument();
                 bsonWriter.WriteEndDocument();
-                bsonWriter.FlushAsync();
+                await bsonWriter.FlushAsync();
                 bsonWriter.Close();
             }
         }

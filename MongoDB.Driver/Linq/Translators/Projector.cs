@@ -17,18 +17,29 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Linq
 {
     /// <summary>
     /// Represents a projection from TSource to TResult;
     /// </summary>
-    internal interface IProjector : IEnumerable
+    internal interface IProjector : IEnumerable, IEnumerableAsync
     {
         /// <summary>
         /// Gets the cursor.
         /// </summary>
         MongoCursor Cursor { get; }
+    }
+
+    /// <summary>
+    /// Represents a projection from TSource to TResult;
+    /// </summary>
+    /// <typeparam name="TSource"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    internal interface IProjectorAsync<TSource, TResult> : IProjector, IEnumerableAsync<TResult>
+    {
+
     }
 
     /// <summary>
@@ -43,7 +54,7 @@ namespace MongoDB.Driver.Linq
     /// Represents a projector that does nothing.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class IdentityProjector<T> : IProjector<T,T>
+    internal class IdentityProjector<T> : IProjectorAsync<T, T>
     {
         // private fields
         private readonly MongoCursor _cursor;
@@ -76,7 +87,16 @@ namespace MongoDB.Driver.Linq
         /// </returns>
         public IEnumerator<T> GetEnumerator()
         {
-            return ((IEnumerable<T>)_cursor).GetEnumerator();
+            return GetEnumeratorAsync().Result;           
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns></returns>
+        public Task<IEnumeratorAsync<T>> GetEnumeratorAsync()
+        {
+            return ((IEnumerableAsync<T>)_cursor).GetEnumeratorAsync();
         }
 
         /// <summary>
@@ -89,6 +109,17 @@ namespace MongoDB.Driver.Linq
         {
             return GetEnumerator();
         }
+
+
+
+        #region IEnumerableAsync Members
+
+        async Task<IEnumeratorAsync> IEnumerableAsync.GetEnumeratorAsync()
+        {
+            return await GetEnumeratorAsync().ConfigureAwait(false);
+        }
+
+        #endregion
     }
 
     /// <summary>
@@ -138,5 +169,14 @@ namespace MongoDB.Driver.Linq
         {
             return GetEnumerator();
         }
+
+        #region IEnumerableAsync Members
+
+        public Task<IEnumeratorAsync> GetEnumeratorAsync()
+        {
+            return Task.FromResult<IEnumeratorAsync>(new EnumeratorAsyncWrapper<TResult>(GetEnumerator()));
+        }
+
+        #endregion
     }
 }

@@ -23,6 +23,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Builders;
 using MongoDB.Driver.Linq.Utils;
+using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Linq
 {
@@ -40,7 +41,7 @@ namespace MongoDB.Driver.Linq
         private LambdaExpression _projection;
         private int? _skip;
         private int? _take;
-        private Func<IEnumerable, object> _elementSelector; // used for First, Last, etc...
+        private Func<IEnumerableAsync, Task<object>> _elementSelector; // used for First, Last, etc...
         private LambdaExpression _distinct;
         private Expression _lastExpression;
 
@@ -138,6 +139,15 @@ namespace MongoDB.Driver.Linq
         /// <returns>The result of executing the translated Find query.</returns>
         public override object Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        /// <summary>
+        /// Executes the translated Find query.
+        /// </summary>
+        /// <returns>The result of executing the translated Find query.</returns>
+        public override async Task<object> ExecuteAsync()
+        {
             if (_take.HasValue && _take.Value == 0)
             {
                 var type = _ofType ?? DocumentType;
@@ -230,7 +240,7 @@ namespace MongoDB.Driver.Linq
 
             if (_elementSelector != null)
             {
-                return _elementSelector(projector);
+                return await _elementSelector(projector).ConfigureAwait(false);
             }
             else
             {
@@ -350,14 +360,14 @@ namespace MongoDB.Driver.Linq
             }
 
             var dottedElementName = serializationInfo.ElementName;
-            var source = Collection.DistinctAsync(dottedElementName, query);
+            var source = Collection.DistinctAsync(dottedElementName, query).Result;
 
             var deserializationProjectorGenericDefinition = typeof(DeserializationProjector<>);
             var deserializationProjectorType = deserializationProjectorGenericDefinition.MakeGenericType(keyExpression.Type);
             return Activator.CreateInstance(deserializationProjectorType, source, serializationInfo);
         }
 
-        private void SetElementSelector(MethodCallExpression methodCallExpression, Func<IEnumerable, object> elementSelector)
+        private void SetElementSelector(MethodCallExpression methodCallExpression, Func<IEnumerableAsync, Task<object>> elementSelector)
         {
             if (_elementSelector != null)
             {
@@ -411,7 +421,7 @@ namespace MongoDB.Driver.Linq
             _projection = null;
 
             // note: recall that cursor method Size respects Skip and Limit while Count does not
-            SetElementSelector(methodCallExpression, source => ((int)((IProjector)source).Cursor.SizeAsync().Result) > 0);
+            SetElementSelector(methodCallExpression, source => ((IProjector)source).Cursor.SizeAsync().ContinueWith(t => (object)(t.Result > 0)));
         }
 
         private void TranslateCount(MethodCallExpression methodCallExpression)
@@ -436,10 +446,10 @@ namespace MongoDB.Driver.Linq
             switch (methodCallExpression.Method.Name)
             {
                 case "Count":
-                    SetElementSelector(methodCallExpression, source => (int)((IProjector)source).Cursor.SizeAsync().Result);
+                    SetElementSelector(methodCallExpression, source => ((IProjector)source).Cursor.SizeAsync().ContinueWith(t => (object)(int)t.Result));
                     break;
                 case "LongCount":
-                    SetElementSelector(methodCallExpression, source => ((IProjector)source).Cursor.SizeAsync());
+                    SetElementSelector(methodCallExpression, source => ((IProjector)source).Cursor.SizeAsync().ContinueWith(t => (object)(int)t.Result));
                     break;
             }
         }
@@ -484,10 +494,10 @@ namespace MongoDB.Driver.Linq
             switch (methodCallExpression.Method.Name)
             {
                 case "ElementAt":
-                    SetElementSelector(methodCallExpression, source => source.Cast<object>().First());
+                    SetElementSelector(methodCallExpression, source => source.FirstAsync());
                     break;
                 case "ElementAtOrDefault":
-                    SetElementSelector(methodCallExpression, source => source.Cast<object>().FirstOrDefault());
+                    SetElementSelector(methodCallExpression, source => source.FirstOrDefaultAsync());
                     break;
             }
         }
@@ -511,19 +521,19 @@ namespace MongoDB.Driver.Linq
             {
                 case "First":
                     _take = 1;
-                    SetElementSelector(methodCallExpression, source => source.Cast<object>().First());
+                    SetElementSelector(methodCallExpression, source => source.FirstAsync());
                     break;
                 case "FirstOrDefault":
                     _take = 1;
-                    SetElementSelector(methodCallExpression, source => source.Cast<object>().FirstOrDefault());
+                    SetElementSelector(methodCallExpression, source => source.FirstOrDefaultAsync());
                     break;
                 case "Single":
                     _take = 2;
-                    SetElementSelector(methodCallExpression, source => source.Cast<object>().Single());
+                    SetElementSelector(methodCallExpression, source => source.SingleAsync());
                     break;
                 case "SingleOrDefault":
                     _take = 2;
-                    SetElementSelector(methodCallExpression, source => source.Cast<object>().SingleOrDefault());
+                    SetElementSelector(methodCallExpression, source => source.SingleOrDefaultAsync());
                     break;
             }
         }
@@ -557,22 +567,24 @@ namespace MongoDB.Driver.Linq
                 switch (methodCallExpression.Method.Name)
                 {
                     case "Last":
-                        SetElementSelector(methodCallExpression, source => source.Cast<object>().First());
+                        SetElementSelector(methodCallExpression, source => source.FirstAsync());
                         break;
                     case "LastOrDefault":
-                        SetElementSelector(methodCallExpression, source => source.Cast<object>().FirstOrDefault());
+                        SetElementSelector(methodCallExpression, source => source.FirstOrDefaultAsync());
                         break;
                 }
             }
             else
             {
+
+                // TODO: Last async IEnumerableASync methods
                 switch (methodCallExpression.Method.Name)
                 {
                     case "Last":
-                        SetElementSelector(methodCallExpression, source => source.Cast<object>().Last());
+                        SetElementSelector(methodCallExpression, source => Task.FromResult(source.Cast<object>().Last()));
                         break;
                     case "LastOrDefault":
-                        SetElementSelector(methodCallExpression, source => source.Cast<object>().LastOrDefault());
+                        SetElementSelector(methodCallExpression, source => Task.FromResult(source.Cast<object>().LastOrDefault()));
                         break;
                 }
             }
@@ -636,7 +648,7 @@ namespace MongoDB.Driver.Linq
             }
 
             _take = 1;
-            SetElementSelector(methodCallExpression, source => source.Cast<object>().First());
+            SetElementSelector(methodCallExpression, source => source.FirstAsync());
         }
 
         private void TranslateMethodCall(MethodCallExpression methodCallExpression)

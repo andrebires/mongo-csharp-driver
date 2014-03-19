@@ -1039,6 +1039,15 @@ namespace MongoDB.Driver
                 _server.ReleaseConnection(connection);
             }
         }
+
+        #region IEnumerableAsync Members
+
+        async Task<IEnumeratorAsync> IEnumerableAsync.GetEnumeratorAsync()
+        {
+            return await GetEnumeratorAsync().ConfigureAwait(false);
+        }
+
+        #endregion
     }
 }
 
