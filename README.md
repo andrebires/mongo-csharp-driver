@@ -24,7 +24,7 @@ private async Task RunAsync()
         var item = enumerator.Current;
     }
 
-    var queryable = await collection
+    var result = await collection
         .AsQueryable()                
         .Where(a => a.ApplicationName.StartsWith("Ch"))
         .Skip(2)
