@@ -1153,7 +1153,7 @@ namespace MongoDB.Driver
             {
                 if (_server.ProxyType == MongoServerProxyType.Unknown)
                 {
-                    _server.Connect();
+                    await _server.ConnectAsync().ConfigureAwait(false);
                 }
                 if (_server.ProxyType == MongoServerProxyType.ReplicaSet && !CanCommandBeSentToSecondary.Delegate(command.ToBsonDocument()))
                 {

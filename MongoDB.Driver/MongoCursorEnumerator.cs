@@ -60,7 +60,7 @@ namespace MongoDB.Driver
             {
                 if (cursor.Server.ProxyType == MongoServerProxyType.Unknown)
                 {
-                    cursor.Server.Connect();
+                    cursor.Server.ConnectAsync().Wait();
                 }
                 if (cursor.Server.ProxyType == MongoServerProxyType.ReplicaSet && !CanCommandBeSentToSecondary.Delegate(_cursor.Query.ToBsonDocument()))
                 {

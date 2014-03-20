@@ -510,9 +510,9 @@ namespace MongoDB.Driver
         /// Connects to the server. Normally there is no need to call this method as
         /// the driver will connect to the server automatically when needed.
         /// </summary>
-        public virtual void Connect()
+        public virtual Task ConnectAsync()
         {
-            Connect(_settings.ConnectTimeout);
+            return ConnectAsync(_settings.ConnectTimeout);
         }
 
         /// <summary>
@@ -520,9 +520,9 @@ namespace MongoDB.Driver
         /// the driver will connect to the server automatically when needed.
         /// </summary>
         /// <param name="timeout">How long to wait before timing out.</param>
-        public virtual void Connect(TimeSpan timeout)
+        public virtual Task ConnectAsync(TimeSpan timeout)
         {
-            _serverProxy.ConnectAsync(timeout, _settings.ReadPreference);
+            return _serverProxy.ConnectAsync(timeout, _settings.ReadPreference);
         }
 
         // TODO: fromHost parameter?
@@ -756,9 +756,9 @@ namespace MongoDB.Driver
         /// <summary>
         /// Checks whether the server is alive (throws an exception if not). If server is a replica set, pings all members one at a time.
         /// </summary>
-        public virtual void Ping()
+        public virtual Task PingAsync()
         {
-            _serverProxy.PingAsync();
+            return _serverProxy.PingAsync();
         }
 
         /// <summary>
@@ -767,11 +767,11 @@ namespace MongoDB.Driver
         /// this method frequently will result in connection thrashing.
         /// </summary>
         public virtual void Reconnect()
-        {
+        {            
             lock (_serverLock)
             {
                 Disconnect();
-                Connect();
+                ConnectAsync().Wait();
             }
         }
 
@@ -814,7 +814,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="initialDatabase">One of the databases involved in the related operations.</param>
         /// <returns>A helper object that implements IDisposable and calls <see cref="RequestDone"/> from the Dispose method.</returns>
-        public virtual IDisposable RequestStart(MongoDatabase initialDatabase)
+        public virtual Task<IDisposable> RequestStartAsync(MongoDatabase initialDatabase)
         {
             return RequestStartAsync(initialDatabase, ReadPreference.Primary);
         }
@@ -828,7 +828,7 @@ namespace MongoDB.Driver
         /// <param name="slaveOk">Whether a secondary is acceptable.</param>
         /// <returns>A helper object that implements IDisposable and calls <see cref="RequestDone"/> from the Dispose method.</returns>
         [Obsolete("Use the overload of RequestStart that has a ReadPreference parameter instead.")]
-        public virtual IDisposable RequestStart(MongoDatabase initialDatabase, bool slaveOk)
+        public virtual Task<IDisposable> RequestStartAsync(MongoDatabase initialDatabase, bool slaveOk)
         {
             var readPreference = ReadPreference.FromSlaveOk(slaveOk);
             return RequestStartAsync(initialDatabase, readPreference);
@@ -918,7 +918,7 @@ namespace MongoDB.Driver
                 try
                 {
                     var adminDatabase = GetDatabase("admin");
-                    adminDatabase.RunCommandAsync("shutdown");
+                    adminDatabase.RunCommandAsync("shutdown").Wait();
                 }
                 catch (EndOfStreamException)
                 {

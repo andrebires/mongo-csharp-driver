@@ -725,7 +725,7 @@ namespace MongoDB.Driver
         /// to enumerate the cursor (foreach will call GetEnumerator for you).
         /// </summary>
         /// <returns>An enumerator that can be used to iterate over the cursor.</returns>
-        public virtual Task<IEnumeratorAsync<TDocument>> GetEnumeratorAsync()
+        public virtual async Task<IEnumeratorAsync<TDocument>> GetEnumeratorAsync()
         {
             IsFrozen = true;
 
@@ -749,7 +749,7 @@ namespace MongoDB.Driver
             {
                 if (Server.ProxyType == MongoServerProxyType.Unknown)
                 {
-                    Server.Connect();
+                    await Server.ConnectAsync().ConfigureAwait(false);
                 }
                 if (Server.ProxyType == MongoServerProxyType.ReplicaSet && !CanCommandBeSentToSecondary.Delegate(Query.ToBsonDocument()))
                 {
@@ -777,7 +777,7 @@ namespace MongoDB.Driver
                 Serializer,
                 Skip);
 
-            return readOperation.ExecuteAsync(new MongoCursorConnectionProvider(Server, readPreference));
+            return await readOperation.ExecuteAsync(new MongoCursorConnectionProvider(Server, readPreference)).ConfigureAwait(false);
         }
 
         /// <summary>

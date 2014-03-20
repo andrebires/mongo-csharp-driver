@@ -1,9 +1,37 @@
 ## MongoDB C# Driver - Async support
 
-EXPERIMENTAL CODE - USE AT YOUR OWN RISK
+UNSTABLE CODE - USE AT YOUR OWN RISK
 
-Async version of the MongoDB official driver. Async LINQ support (ToListAsync, FirstOrDefaultAsync, etc.).
+Async version of the MongoDB official driver. Async LINQ support (ToListAsync, FirstOrDefaultAsync, etc.) based on EF6.1 implementation.
 
+Sample usage:
+```csharp
+
+private async Task RunAsync()
+{
+    var client = new MongoClient(connectionString);
+    var server = client.GetServer();
+    var database = server.GetDatabase("MongoTest");
+
+    var collection = database.GetCollection<ApplicationConfiguration>("ApplicationConfigurations");
+
+    var cursor = collection.FindAll();
+    var count = await cursor.CountAsync();
+
+    var enumerator = await cursor.GetEnumeratorAsync();
+    while (await enumerator.MoveNextAsync())
+    {
+        var item = enumerator.Current;
+    }
+
+    var queryable = await collection
+        .AsQueryable()                
+        .Where(a => a.ApplicationName.StartsWith("Ch"))
+        .Skip(2)
+        .Take(5)
+        .ToListAsync();            
+}
+```
 ---------------------------------------------
 
 documentation: http://www.mongodb.org/display/DOCS/CSharp+Language+Center

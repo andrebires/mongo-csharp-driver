@@ -149,8 +149,6 @@ namespace MongoDB.Driver.Linq
             {
                 throw new ArgumentException("Provider result is not IEnumerableAsync");
             }        
-
-            //return await ((IEnumerableAsync<T>)await _provider.ExecuteAsync(_expression, CancellationToken.None).ConfigureAwait(false)).GetEnumeratorAsync().ConfigureAwait(false);
         }
 
         #endregion
