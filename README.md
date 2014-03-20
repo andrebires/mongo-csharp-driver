@@ -9,58 +9,58 @@ Sample usage:
 
 private async Task RunAsync()
 {
-            var client = new MongoClient(connectionString);
-            var server = client.GetServer();
-            var database = server.GetDatabase("MongoTest");
+    var client = new MongoClient(connectionString);
+    var server = client.GetServer();
+    var database = server.GetDatabase("MongoTest");
 
-            var collection = database.GetCollection<ApplicationConfiguration>("ApplicationConfigurations");
+    var collection = database.GetCollection<ApplicationConfiguration>("ApplicationConfigurations");
 
-            var cursor = collection.FindAll();
-            var count = await cursor.CountAsync();
+    var cursor = collection.FindAll();
+    var count = await cursor.CountAsync();
 
-            var enumerator = await cursor.GetEnumeratorAsync();
-            while (await enumerator.MoveNextAsync())
+    var enumerator = await cursor.GetEnumeratorAsync();
+    while (await enumerator.MoveNextAsync())
+    {
+        var item = enumerator.Current;
+    }
+
+    var queryable = await collection
+        .AsQueryable()                
+        .Where(a => a.ApplicationName.StartsWith("Test"))
+        .Skip(2)
+        .Take(5)
+        .ToListAsync();
+
+    var applicationConfiguration = new ApplicationConfiguration()
+    {
+        ApplicationConfigurationId = Guid.NewGuid(),
+        ApplicationName = "Test application",
+        SeverityLevel = System.Diagnostics.TraceEventType.Verbose,
+        SeverityFilterCollection = new List<SeverityFilter>()
+        {
+            new SeverityFilter()
             {
-                var item = enumerator.Current;
+                SeverityFilterId = Guid.NewGuid(),
+                CategoryName = "Category",
+                MachineName = "SERVER1",
+                SeverityLevel = System.Diagnostics.TraceEventType.Error,
+                MessageTitle = "Title 1"
+            },
+            new SeverityFilter()
+            {
+                SeverityFilterId = Guid.NewGuid(),
+                CategoryName = "Category",
+                MachineName = "SERVER2",
+                SeverityLevel = System.Diagnostics.TraceEventType.Error,
+                MessageTitle = "Title 2"
             }
+        }
+    };
 
-            var queryable = await collection
-                .AsQueryable()                
-                .Where(a => a.ApplicationName.StartsWith("Test"))
-                .Skip(2)
-                .Take(5)
-                .ToListAsync();
-
-            var applicationConfiguration = new ApplicationConfiguration()
-            {
-                ApplicationConfigurationId = Guid.NewGuid(),
-                ApplicationName = "Test application",
-                SeverityLevel = System.Diagnostics.TraceEventType.Verbose,
-                SeverityFilterCollection = new List<SeverityFilter>()
-                {
-                    new SeverityFilter()
-                    {
-                        SeverityFilterId = Guid.NewGuid(),
-                        CategoryName = "Category",
-                        MachineName = "SERVER1",
-                        SeverityLevel = System.Diagnostics.TraceEventType.Error,
-                        MessageTitle = "Title 1"
-                    },
-                    new SeverityFilter()
-                    {
-                        SeverityFilterId = Guid.NewGuid(),
-                        CategoryName = "Category",
-                        MachineName = "SERVER2",
-                        SeverityLevel = System.Diagnostics.TraceEventType.Error,
-                        MessageTitle = "Title 2"
-                    }
-                }
-            };
-
-            var insertResult = await collection.InsertAsync(applicationConfiguration);
-            var updatedApplicationCofiguration = await collection.FindOneByIdAsAsync<ApplicationConfiguration>(applicationConfiguration.ApplicationConfigurationId);
-            updatedApplicationCofiguration.ApplicationName = "Test application Updated";
-            var updateResult = await collection.SaveAsync(updatedApplicationCofiguration);
+    var insertResult = await collection.InsertAsync(applicationConfiguration);
+    var updatedApplicationCofiguration = await collection.FindOneByIdAsAsync<ApplicationConfiguration>(applicationConfiguration.ApplicationConfigurationId);
+    updatedApplicationCofiguration.ApplicationName = "Test application Updated";
+    var updateResult = await collection.SaveAsync(updatedApplicationCofiguration);
 }
 ```
 
