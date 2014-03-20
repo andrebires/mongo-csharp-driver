@@ -176,11 +176,11 @@ namespace MongoDB.Bson.IO
         /// Loads the buffer from a Stream (the Stream must be positioned at a 4 byte length field).
         /// </summary>
         /// <param name="stream">The Stream.</param>
-        public void LoadFrom(Stream stream)
+        public async Task LoadFromAsync(Stream stream)
         {
-            LoadFrom(stream, 4); // does not advance position
+            await LoadFromAsync(stream, 4).ConfigureAwait(false); // does not advance position
             int length = ReadInt32(); // advances position 4 bytes
-            LoadFrom(stream, length - 4); // does not advance position
+            await LoadFromAsync(stream, length - 4).ConfigureAwait(false); // does not advance position
             Position -= 4; // move back to just before the length field
         }
 
@@ -189,10 +189,10 @@ namespace MongoDB.Bson.IO
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="count">The number of bytes to load.</param>
-        public void LoadFrom(Stream stream, int count)
+        public Task LoadFromAsync(Stream stream, int count)
         {
             ThrowIfDisposed();
-            _byteBuffer.LoadFromAsync(stream, count); // does not advance position
+            return _byteBuffer.LoadFromAsync(stream, count); // does not advance position
         }
 
         /// <summary>

@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Operations
             if (serverInstance.Supports(FeatureId.WriteCommands) && _args.WriteConcern.Enabled)
             {
                 var emulator = new InsertOpcodeOperationEmulator(_args);
-                return await emulator.ExecuteAsync(connection);
+                return await emulator.ExecuteAsync(connection).ConfigureAwait(false);
             }
 
             var results = WriteConcern.Enabled ? new List<WriteConcernResult>() : null;
@@ -79,7 +79,7 @@ namespace MongoDB.Driver.Operations
                         message.WriteTo(buffer); // consumes as much of nextBatch as fits in one message
                         batchProgress = message.BatchProgress;
 
-                        sendBatchResult = await SendBatchAsync(connection, buffer, message.RequestId, batchProgress.IsLast);
+                        sendBatchResult = await SendBatchAsync(connection, buffer, message.RequestId, batchProgress.IsLast).ConfigureAwait(false);
                     }
 
                     // note: getLastError is sent even when WriteConcern is not enabled if ContinueOnError is false

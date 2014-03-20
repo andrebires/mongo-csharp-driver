@@ -582,7 +582,7 @@ namespace MongoDB.Driver
         {
             var database = GetDatabase(databaseName);
             var command = new CommandDocument("dropDatabase", 1);
-            var result = await database.RunCommandAsync(command);
+            var result = await database.RunCommandAsync(command).ConfigureAwait(false);
             return result;
         }
 

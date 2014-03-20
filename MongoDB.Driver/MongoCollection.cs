@@ -1131,12 +1131,12 @@ namespace MongoDB.Driver
         /// <returns>The total data size.</returns>
         public virtual async Task<long> GetTotalDataSizeAsync()
         {
-            var totalSize = (await GetStatsAsync()).DataSize;
+            var totalSize = (await GetStatsAsync().ConfigureAwait(false)).DataSize;
             foreach (var index in GetIndexes())
             {
                 var indexCollectionName = string.Format("{0}.${1}", _name, index.Name);
                 var indexCollection = _database.GetCollection(indexCollectionName);
-                totalSize += (await indexCollection.GetStatsAsync()).DataSize;
+                totalSize += (await indexCollection.GetStatsAsync().ConfigureAwait(false)).DataSize;
             }
             return totalSize;
         }
@@ -1147,12 +1147,12 @@ namespace MongoDB.Driver
         /// <returns>The total storage size.</returns>
         public virtual async Task<long> GetTotalStorageSizeAsync()
         {
-            var totalSize = (await GetStatsAsync()).StorageSize;
+            var totalSize = (await GetStatsAsync().ConfigureAwait(false)).StorageSize;
             foreach (var index in GetIndexes())
             {
                 var indexCollectionName = string.Format("{0}.${1}", _name, index.Name);
                 var indexCollection = _database.GetCollection(indexCollectionName);
-                totalSize += (await indexCollection.GetStatsAsync()).StorageSize;
+                totalSize += (await indexCollection.GetStatsAsync().ConfigureAwait(false)).StorageSize;
             }
             return totalSize;
         }
@@ -1197,7 +1197,7 @@ namespace MongoDB.Driver
                 },
                 { "maxTimeMS", () => args.MaxTime.Value.TotalMilliseconds, args.MaxTime.HasValue } // optional
             };
-            var result = await RunCommandAsAsync<CommandResult>(command);
+            var result = await RunCommandAsAsync<CommandResult>(command).ConfigureAwait(false);
             return result.Response["retval"].AsBsonArray.Values.Cast<BsonDocument>();
         }
 
@@ -1395,7 +1395,7 @@ namespace MongoDB.Driver
             {
                 throw new ArgumentNullException("document");
             }
-            var results = await InsertBatchAsync(nominalType, new object[] { document }, options);
+            var results = await InsertBatchAsync(nominalType, new object[] { document }, options).ConfigureAwait(false);
             return (results == null) ? null : results.Single();
         }
 
