@@ -32,6 +32,8 @@ private async Task RunAsync()
         .ToListAsync();            
 }
 ```
+
+Nuget: mongodb.async
 ---------------------------------------------
 
 documentation: http://www.mongodb.org/display/DOCS/CSharp+Language+Center
