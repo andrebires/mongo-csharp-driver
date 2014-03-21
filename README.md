@@ -4,9 +4,11 @@ UNSTABLE CODE - USE AT YOUR OWN RISK
 
 Async version of the MongoDB official driver. Async LINQ support (ToListAsync, FirstOrDefaultAsync, etc.) based on EF6.1 implementation.
 
-Sample usage:
-```csharp
+###Nuget:
+MongoDB.Async
 
+###Sample:
+```csharp
 private async Task RunAsync()
 {
     var client = new MongoClient(connectionString);
@@ -67,7 +69,7 @@ private async Task RunAsync()
 Profiling:
 
 ```json
-/* 0 */
+/* cursor.CountAsync() */
 {
   "op" : "command",
   "ns" : "MongoTest.$cmd",
@@ -95,7 +97,7 @@ Profiling:
   "user" : ""
 }
 
-/* 1 */
+/* cursor.GetEnumeratorAsync() */
 {
   "op" : "query",
   "ns" : "MongoTest.ApplicationConfigurations",
@@ -124,7 +126,7 @@ Profiling:
   "user" : ""
 }
 
-/* 2 */
+/* collection.AsQueryable().Where(a => a.ApplicationName.StartsWith("Test")).Skip(2).Take(5).ToListAsync() */
 {
   "op" : "query",
   "ns" : "MongoTest.ApplicationConfigurations",
@@ -155,7 +157,7 @@ Profiling:
   "user" : ""
 }
 
-/* 3 */
+/* collection.InsertAsync(applicationConfiguration) */
 {
   "op" : "insert",
   "ns" : "MongoTest.ApplicationConfigurations",
@@ -179,7 +181,7 @@ Profiling:
   "user" : ""
 }
 
-/* 4 */
+/* collection.FindOneByIdAsAsync<ApplicationConfiguration>(applicationConfiguration.ApplicationConfigurationId) */
 {
   "op" : "query",
   "ns" : "MongoTest.ApplicationConfigurations",
@@ -210,7 +212,7 @@ Profiling:
   "user" : ""
 }
 
-/* 5 */
+/* collection.SaveAsync(updatedApplicationCofiguration) */
 {
   "op" : "update",
   "ns" : "MongoTest.ApplicationConfigurations",
@@ -262,8 +264,6 @@ Profiling:
   "user" : ""
 }
 ```
-
-Nuget: mongodb.async
 
 ---------------------------------------------
 
