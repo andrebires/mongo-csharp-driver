@@ -515,9 +515,9 @@ namespace MongoDB.Driver
         /// Tests whether this collection exists.
         /// </summary>
         /// <returns>True if this collection exists.</returns>
-        public virtual bool Exists()
+        public virtual Task<bool> ExistsAsync()
         {
-            return _database.CollectionExists(_name);
+            return _database.CollectionExistsAsync(_name);
         }
 
         /// <summary>

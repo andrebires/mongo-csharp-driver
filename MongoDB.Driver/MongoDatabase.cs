@@ -281,9 +281,9 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="collectionName">The name of the collection.</param>
         /// <returns>True if the collection exists.</returns>
-        public virtual bool CollectionExists(string collectionName)
+        public virtual async Task<bool> CollectionExistsAsync(string collectionName)
         {
-            return GetCollectionNames().Contains(collectionName);
+            return (await GetCollectionNamesAsync()).Contains(collectionName);
         }
 
         /// <summary>
@@ -658,13 +658,18 @@ namespace MongoDB.Driver
         /// Gets a list of the names of all the collections in this database.
         /// </summary>
         /// <returns>A list of collection names.</returns>
-        public virtual IEnumerable<string> GetCollectionNames()
+        public virtual async Task<IEnumerable<string>> GetCollectionNamesAsync()
         {
             List<string> collectionNames = new List<string>();
             var namespaces = GetCollection("system.namespaces");
             var prefix = _name + ".";
-            foreach (var @namespace in namespaces.FindAll())
+
+            var cursor = namespaces.FindAll();
+            var enumerator = await cursor.GetEnumeratorAsync().ConfigureAwait(false);
+
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
             {
+                var @namespace = enumerator.Current;
                 string collectionName = @namespace["name"].AsString;
                 if (!collectionName.StartsWith(prefix, StringComparison.Ordinal)) { continue; }
                 if (collectionName.IndexOf('$') != -1) { continue; }
